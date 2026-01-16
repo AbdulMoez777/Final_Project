@@ -126,7 +126,4 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173", # Standard Vite React port
-    "http://localhost:3000", # Standard Create-React-App port
-]
+CORS_ALLOW_ALL_ORIGINS = True

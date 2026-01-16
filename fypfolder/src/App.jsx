@@ -1,21 +1,24 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-
-// FIX 1: Correct the path (use ./ instead of .src/)
-import LandingPage from './pages/LandingPage';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import Dashboard from './pages/Dashboard';
+import Landing from './pages/LandingPage'; // <--- Make sure this import is here!
+import Summary from './pages/Summary';
 
 function App() {
   return (
-    // FIX 2: Wrap everything in <Router> so useNavigate works
-    <Router>
+    <BrowserRouter>
       <Routes>
-        <Route path="/" element={<LandingPage />} />
+        {/* This line tells the app: "When at '/', show Landing Page" */}
+        <Route path="/" element={<Landing />} />
+        
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/summary" element={<Summary />} />
       </Routes>
-    </Router>
+    </BrowserRouter>
   );
 }
 

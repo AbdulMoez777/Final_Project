@@ -1,7 +1,6 @@
-import { useNavigate } from 'react-router-dom';
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // Keep this for button navigation
 import heropng from '../assets/Hero.png';
-
 import { 
   BookOpen, 
   BrainCircuit, 
@@ -13,12 +12,11 @@ import {
   X, 
   ChevronDown, 
   ChevronUp,
-  CheckCircle,
   ArrowRight
 } from 'lucide-react';
 
 const LandingPage = () => {
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // This tool allows us to switch pages
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
 
@@ -45,10 +43,20 @@ const LandingPage = () => {
               <a href="#features" className="text-slate-600 hover:text-blue-600 font-medium">Features</a>
               <a href="#how-it-works" className="text-slate-600 hover:text-blue-600 font-medium">How It Works</a>
               <a href="#faq" className="text-slate-600 hover:text-blue-600 font-medium">FAQ</a>
-              <button onClick={() => navigate('/login')} className="px-5 py-2 text-blue-600 font-semibold border border-blue-600 rounded-full hover:bg-blue-50 transition">
+              
+              {/* ✅ UPDATED: Working Login Button */}
+              <button 
+                onClick={() => navigate('/login')} 
+                className="px-5 py-2 text-blue-600 font-semibold border border-blue-600 rounded-full hover:bg-blue-50 transition"
+              >
                 Login
               </button>
-              <button onClick={() => navigate('/signup')} className="px-5 py-2 bg-blue-600 text-white font-semibold rounded-full hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition">
+              
+              {/* ✅ UPDATED: Working Sign Up Button */}
+              <button 
+                onClick={() => navigate('/signup')} 
+                className="px-5 py-2 bg-blue-600 text-white font-semibold rounded-full hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition"
+              >
                 Sign Up
               </button>
             </div>
@@ -69,8 +77,22 @@ const LandingPage = () => {
             <a href="#how-it-works" className="block text-slate-600 font-medium">How It Works</a>
             <a href="#faq" className="block text-slate-600 font-medium">FAQ</a>
             <div className="flex flex-col gap-3 mt-4">
-              <button className="w-full py-2 text-blue-600 font-semibold border border-blue-600 rounded-lg">Login</button>
-              <button className="w-full py-2 bg-blue-600 text-white font-semibold rounded-lg">Sign Up</button>
+              
+              {/* ✅ UPDATED: Mobile Login Button */}
+              <button 
+                onClick={() => navigate('/login')}
+                className="w-full py-2 text-blue-600 font-semibold border border-blue-600 rounded-lg"
+              >
+                Login
+              </button>
+              
+              {/* ✅ UPDATED: Mobile Sign Up Button */}
+              <button 
+                onClick={() => navigate('/signup')}
+                className="w-full py-2 bg-blue-600 text-white font-semibold rounded-lg"
+              >
+                Sign Up
+              </button>
             </div>
           </div>
         )}
@@ -87,8 +109,7 @@ const LandingPage = () => {
             </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 leading-tight mb-6">
               Study Smarter With <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600"
->
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
                 AI Powered Tools
               </span>
             </h1>
@@ -96,9 +117,15 @@ const LandingPage = () => {
               Upload your PDFs, slides, or notes. Let our AI generate summaries, quizzes, and flashcards instantly. Save time and boost your grades.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <button onClick={() => navigate('/signup')} className="px-8 py-3.5 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 shadow-xl shadow-blue-600/20 transition flex items-center justify-center gap-2">
+              
+              {/* ✅ UPDATED: Hero CTA Button */}
+              <button 
+                onClick={() => navigate('/signup')} 
+                className="px-8 py-3.5 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 shadow-xl shadow-blue-600/20 transition flex items-center justify-center gap-2"
+              >
                 Get Started Free <ArrowRight size={20} />
               </button>
+              
               <button className="px-8 py-3.5 text-slate-700 font-bold bg-white border border-slate-200 rounded-full hover:bg-slate-50 transition">
                 View Demo
               </button>
@@ -183,9 +210,7 @@ const LandingPage = () => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-12 text-center relative">
-            {/* Connecting Line (Desktop) */}
             <div className="hidden md:block absolute top-12 left-0 right-0 h-0.5 bg-slate-100 -z-10 mx-16"></div>
-
             <StepCard 
               number="01" 
               title="Upload Your Notes" 
@@ -213,7 +238,6 @@ const LandingPage = () => {
           <div className="bg-white p-8 rounded-2xl shadow-xl border border-blue-100">
             <div className="flex justify-center mb-6">
               <div className="w-16 h-16 bg-slate-200 rounded-full overflow-hidden">
-                {/* Placeholder for user image */}
                 <img src="/api/placeholder/100/100" alt="Student" className="w-full h-full object-cover" />
               </div>
             </div>
@@ -278,7 +302,11 @@ const LandingPage = () => {
               <h3 className="text-2xl font-bold text-white mb-2">Start Studying Smarter Today</h3>
               <p className="text-blue-100">Let AI simplify your study routine.</p>
             </div>
-            <button className="px-8 py-3 bg-white text-blue-600 font-bold rounded-full hover:bg-slate-100 transition">
+            {/* ✅ UPDATED: Footer Join Now Button */}
+            <button 
+              onClick={() => navigate('/signup')} 
+              className="px-8 py-3 bg-white text-blue-600 font-bold rounded-full hover:bg-slate-100 transition"
+            >
               Join Now
             </button>
           </div>

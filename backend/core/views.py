@@ -2,14 +2,15 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate # <--- New Import
+from django.contrib.auth import authenticate 
 from transformers import pipeline
 
 
-# --- LOAD THE AI MODEL ONCE (Global Variable) ---
-# This downloads the model the first time you run the server
+
 print("Loading AI Model... please wait...")
 summarizer = pipeline("summarization", model="Falconsai/text_summarization")
+
+quiz_generator = pipeline("text2text-generation", model="google/flan-t5-small")
 print("AI Model Ready!")
 
 @api_view(['POST'])
@@ -27,20 +28,77 @@ def signup(request):
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+
+
+# LOGIN: Return 'is_admin' status
 @api_view(['POST'])
 def login_view(request):
     email = request.data.get('email')
     password = request.data.get('password')
-
-    # Django checks if the email and password match
     user = authenticate(username=email, password=password)
 
     if user is not None:
-        return Response({'message': 'Login Successful!'}, status=status.HTTP_200_OK)
+        # Check if user is an Admin (is_staff)
+        return Response({
+            'message': 'Login Successful!',
+            'is_admin': user.is_staff  
+        }, status=status.HTTP_200_OK)
     else:
         return Response({'error': 'Invalid email or password'}, status=status.HTTP_401_UNAUTHORIZED)
     
-    # --- NEW: SUMMARIZATION FUNCTION ---
+
+# Quiz View Function
+@api_view(['POST'])
+def generate_quiz(request):
+    text = request.data.get('text', '')
+    
+    if not text:
+        return Response({'error': 'No text provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        
+        prompts = [
+            f"generate a question about the main concept of: {text}",
+            f"generate a detailed question about: {text}",
+            f"generate a true or false question about: {text}"
+        ]
+        
+        generated_questions = []
+
+        # LOOP: Ask the AI one by one
+        for prompt in prompts:
+            result = quiz_generator(prompt, max_length=64, do_sample=True, temperature=0.9)
+            question = result[0]['generated_text']
+            
+            # Basic cleanup: Ensure it has a question mark
+            if not question.endswith('?'):
+                question += '?'
+            
+            generated_questions.append(question)
+
+        # Return the list of 3 questions
+        return Response({'quiz': generated_questions}, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        print("Quiz Error:", str(e))
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    # Manage Users (Get List & Delete)
+@api_view(['GET', 'DELETE'])
+def manage_users(request, user_id=None):
+    if request.method == 'GET':
+        # Return a list of all users (id, email, is_staff status)
+        users = User.objects.all().values('id', 'username', 'email', 'is_staff', 'date_joined')
+        return Response(users, status=status.HTTP_200_OK)
+    
+    if request.method == 'DELETE':
+        try:
+            user_to_delete = User.objects.get(id=user_id)
+            user_to_delete.delete()
+            return Response({'message': 'User deleted successfully'}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+    
 @api_view(['POST'])
 def summarize_text(request):
     try:
@@ -49,11 +107,10 @@ def summarize_text(request):
         if not text_to_summarize:
             return Response({'error': 'No text provided'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Run the AI model
-        # max_length=1000, min_length=30, do_sample=False (from your snippet)
+        
         summary_result = summarizer(text_to_summarize, max_length=1000, min_length=30, do_sample=False)
         
-        # Extract just the text from the result
+        
         summary_text = summary_result[0]['summary_text']
 
         return Response({'summary': summary_text}, status=status.HTTP_200_OK)

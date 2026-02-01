@@ -18,7 +18,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    // In the future, clear user tokens here
+    
     navigate('/login');
   };
 
@@ -101,6 +101,7 @@ const Dashboard = () => {
                 color="bg-blue-600"
               />
               <ActionCard 
+                onClick={() => navigate('/quiz-generator')}
                 title="Create Quiz" 
                 desc="Test your knowledge with AI questions." 
                 icon={<Zap size={32} className="text-white" />} 

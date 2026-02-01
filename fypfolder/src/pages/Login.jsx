@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
-  // 1. These variables hold what you type
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
 
-  // 2. This function runs when you click "Sign In"
+  
   const handleLogin = async () => {
     // Basic check: Don't send empty data
     if (!email || !password) {
@@ -26,11 +28,19 @@ const Login = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // 4. IF SUCCESS: Go to Dashboard!
+        
         console.log("Login Success!");
-        navigate('/dashboard');
+        
+        
+        if (data.is_admin) {
+            navigate('/admin-dashboard'); 
+        } else {
+            navigate('/dashboard');       
+        }
+        
+
       } else {
-        // 5. IF FAIL: Show the error from Django
+        
         alert(data.error || 'Login failed. Check your password.');
       }
     } catch (error) {
@@ -59,18 +69,28 @@ const Login = () => {
           
           <div>
             <label className="block text-sm font-medium text-slate-600 mb-1">Password</label>
-            <input 
-              type="password" 
-              className="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="relative">
+              <input 
+                type={showPassword ? "text" : "password"} // <--- Toggles text/dots
+                className="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none pr-10"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
             <div className="text-right mt-1">
                 <a href="#" className="text-xs text-blue-500 hover:underline">Forgot Password?</a>
             </div>
           </div>
 
+          
           <button 
             onClick={handleLogin} // <--- This connects the button to the function!
             className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition shadow-md"

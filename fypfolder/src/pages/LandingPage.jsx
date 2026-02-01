@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom'; // Keep this for button navigation
 import heropng from '../assets/Hero.png';
+import testinomialmoez from '../assets/testinomialmoez.png'; // <--- Add this
 import { 
   BookOpen, 
   BrainCircuit, 
@@ -238,8 +239,9 @@ const LandingPage = () => {
           <div className="bg-white p-8 rounded-2xl shadow-xl border border-blue-100">
             <div className="flex justify-center mb-6">
               <div className="w-16 h-16 bg-slate-200 rounded-full overflow-hidden">
-                <img src="/api/placeholder/100/100" alt="Student" className="w-full h-full object-cover" />
-              </div>
+             {/* Use your new imported image variable here */}
+            <img src={testinomialmoez} alt="Abdul Moez" className="w-full h-full object-cover" />
+            </div>
             </div>
             <p className="text-xl text-slate-700 italic mb-6">
               "The quizzes feel like real exam questions. It helped me prepare more effectively and saved me hours of manual note-taking."

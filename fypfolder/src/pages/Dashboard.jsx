@@ -36,9 +36,9 @@ const Dashboard = () => {
         <nav className="flex-1 px-4 space-y-2">
           <SidebarItem icon={<LayoutDashboard size={20} />} text="Dashboard" active />
           {/* Project Specific Modules */}
-          <SidebarItem icon={<FileText size={20} />} text="Summarizer" />
-          <SidebarItem icon={<Zap size={20} />} text="Quiz Generator" />
-          <SidebarItem icon={<Layers size={20} />} text="Flashcards" />
+          <SidebarItem onClick={() => navigate('/summary')} icon={<FileText size={20} />} text="Summarizer" />
+          <SidebarItem onClick={() => navigate('/quiz-generator')} icon={<Zap size={20} />} text="Quiz Generator" />
+          <SidebarItem onClick={() => navigate('/flashcards')} icon={<Layers size={20} />} text="Flashcards" />
           <SidebarItem icon={<UploadCloud size={20} />} text="My Files" />
         </nav>
 
@@ -108,6 +108,7 @@ const Dashboard = () => {
                 color="bg-purple-600"
               />
               <ActionCard 
+              onClick={() => navigate('/flashcards')}
                 title="Make Flashcards" 
                 desc="Convert slides into revision cards." 
                 icon={<Layers size={32} className="text-white" />} 
@@ -190,8 +191,11 @@ const Dashboard = () => {
 
 /* --- REUSABLE COMPONENTS --- */
 
-const SidebarItem = ({ icon, text, active }) => (
-  <button className={`flex items-center gap-3 px-4 py-3 rounded-xl w-full transition-all font-medium ${active ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'}`}>
+const SidebarItem = ({ icon, text, active, onClick }) => (
+  <button 
+    onClick={onClick} 
+    className={`flex items-center gap-3 px-4 py-3 rounded-xl w-full transition-all font-medium ${active ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'}`}
+  >
     {icon} {text}
   </button>
 );

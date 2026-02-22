@@ -7,6 +7,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import Landing from './pages/LandingPage'; 
 import Summary from './pages/Summary';
 import QuizGenerator from './pages/QuizGenerator';
+import FlashcardsPage from './pages/FlashcardsPage';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="/summary" element={<Summary />} />
         <Route path="/quiz-generator" element={<QuizGenerator />} />
+        <Route path="/flashcards" element={<FlashcardsPage />} />
       </Routes>
     </BrowserRouter>
   );

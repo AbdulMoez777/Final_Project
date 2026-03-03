@@ -4,7 +4,14 @@ from rest_framework import status
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate 
 from transformers import pipeline
+import json
+import google.generativeai as genai
 
+
+
+
+# Gemini APi
+genai.configure(api_key="AIzaSyBpavci2yP5zbCahxzRg6SMzEwkTn4TMDk")
 
 
 print("Loading AI Model... please wait...")
@@ -116,4 +123,45 @@ def summarize_text(request):
         return Response({'summary': summary_text}, status=status.HTTP_200_OK)
 
     except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# 👇 NEW: The updated Gemini Flashcards View Function
+@api_view(['POST'])
+def generate_flashcards(request):
+    text = request.data.get('text', '')
+    
+    if not text:
+        return Response({'error': 'No text provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        prompt = f"""
+        Create study flashcards from the following notes. 
+        Return ONLY a JSON array of objects, where each object has a 'question' and an 'answer'. 
+        Do not include any extra text, markdown formatting like ```json, or greetings. Just the raw JSON.
+        
+        Notes: {text}
+        """
+
+        
+        # THIS LINE to use the active 2.5 model
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        response = model.generate_content(prompt)
+
+        # Gemini sometimes wraps JSON in markdown blocks, this cleans it up so React doesn't crash
+        ai_text = response.text.strip()
+        if ai_text.startswith("```json"):
+            ai_text = ai_text[7:]
+        elif ai_text.startswith("```"):
+            ai_text = ai_text[3:]
+            
+        if ai_text.endswith("```"):
+            ai_text = ai_text[:-3]
+
+        # Convert the clean string into a real Python list
+        flashcards = json.loads(ai_text.strip()) 
+
+        return Response(flashcards, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        print("Flashcard Error:", str(e))
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

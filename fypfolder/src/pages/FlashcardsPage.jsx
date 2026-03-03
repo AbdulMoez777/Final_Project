@@ -9,21 +9,42 @@ const FlashcardsPage = () => {
   // This function runs when you click "Generate"
   const handleGenerate = async () => {
     if (!inputText) return;
-    
-    setIsLoading(true);
 
-    // 🛑 DUMMY DATA: Later, we will replace this with a call to your Django backend!
-    // For now, this just proves the page works visually.
-    setTimeout(() => {
-      const dummyData = [
-        { question: "What is an Artificial Neural Network?", answer: "A computing system inspired by the biological neural networks that constitute animal brains." },
-        { question: "What does CNN stand for in Deep Learning?", answer: "Convolutional Neural Network, often used for image recognition." },
-        { question: "What is Backpropagation?", answer: "An algorithm used to calculate derivatives quickly, widely used to train neural networks." }
-      ];
-      setFlashcards(dummyData);
+    setIsLoading(true);
+    setFlashcards([]); // Clear previous cards
+    setFlippedCards([]); // Reset flipped state
+
+    try {
+      // Send the text to my Django backend
+      const response = await fetch('http://localhost:8000/api/generate-flashcards/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: inputText }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate flashcards');
+      }
+
+      // Get the JSON array back from DJANGO/OpenAI
+      const data = await response.json();
+
+      //Put the real AI flascards on the screen
+      setFlashcards(data);
+
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Backend error! Check your Django terminal to see what crashed.");
+    } finally {
       setIsLoading(false);
-    }, 1500); // Fakes a 1.5 second loading time
+    }
+
   };
+
+
+
 
   // Function to flip a specific card
   const toggleCard = (index) => {
@@ -47,7 +68,7 @@ const FlashcardsPage = () => {
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
         ></textarea>
-        
+
         <div className="mt-4 flex justify-end">
           <button
             onClick={handleGenerate}
@@ -64,10 +85,10 @@ const FlashcardsPage = () => {
         <div>
           <h2 className="text-xl font-bold mb-4">Your Revision Cards</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            
+
             {flashcards.map((card, index) => {
               const isFlipped = flippedCards.includes(index);
-              
+
               return (
                 <div
                   key={index}
@@ -78,11 +99,11 @@ const FlashcardsPage = () => {
                   <span className="absolute top-3 left-4 text-xs font-bold opacity-50 uppercase tracking-wider">
                     {isFlipped ? 'Answer' : 'Question'}
                   </span>
-                  
+
                   <h3 className="text-lg font-medium mt-4">
                     {isFlipped ? card.answer : card.question}
                   </h3>
-                  
+
                   <span className="absolute bottom-3 text-xs opacity-60">
                     Click to flip
                   </span>

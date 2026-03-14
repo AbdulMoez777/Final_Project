@@ -9,9 +9,42 @@ const Summary = () => {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
+
+
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setLoading(true);
+    try {
+      const response = await fetch('http://localhost:8000/api/extract-text/', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // This drops the text into your text box!
+        setInputText(data.text);
+      } else {
+        alert("Error reading file: " + data.error);
+      }
+    } catch (error) {
+      console.error("Upload Error:", error);
+      alert("Failed to upload the file.");
+    } finally {
+      setIsLoading(false);
+      event.target.value = null;
+    }
+  };
+
   const handleSummarize = async () => {
     if (!inputText) return;
-    
+
     setLoading(true);
     setSummary(''); // Clear old summary
 
@@ -23,7 +56,7 @@ const Summary = () => {
       });
 
       const data = await response.json();
-      
+
       if (response.ok) {
         setSummary(data.summary);
       } else {
@@ -44,7 +77,7 @@ const Summary = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 p-8 flex flex-col items-center">
-      
+
       {/* Header */}
       <div className="w-full max-w-4xl flex items-center justify-between mb-8">
         <button onClick={() => navigate('/dashboard')} className="flex items-center text-slate-500 hover:text-blue-600 font-medium">
@@ -57,20 +90,29 @@ const Summary = () => {
       </div>
 
       <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-8 h-[600px]">
-        
+
         {/* Input Side */}
         <div className="flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="p-4 border-b border-slate-100 bg-slate-50 font-semibold text-slate-700">
-            Paste your text here
+          {/* 👇 NEW CODE ADDED HERE: I updated this header bar to hold your File Upload button */}
+          <div className="p-4 border-b border-slate-100 bg-slate-50 flex flex-col gap-3">
+            <span className="font-semibold text-slate-700">Paste your text or upload a file</span>
+            <input 
+              type="file" 
+              accept=".pdf,.pptx,.txt" 
+              onChange={handleFileUpload}
+              disabled={loading}
+              className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition cursor-pointer"
+            />
           </div>
-          <textarea 
+          {/* ☝️ END OF NEW CODE */}
+          <textarea
             className="flex-1 p-6 resize-none focus:outline-none text-slate-600 leading-relaxed"
             placeholder="Paste a long article, notes, or paragraph here..."
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
           ></textarea>
           <div className="p-4 border-t border-slate-100 bg-white">
-            <button 
+            <button
               onClick={handleSummarize}
               disabled={loading || !inputText}
               className={`w-full py-3 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2 ${loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 hover:shadow-lg'}`}

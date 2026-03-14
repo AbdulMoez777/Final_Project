@@ -6,6 +6,11 @@ from django.contrib.auth import authenticate
 from transformers import pipeline
 import json
 import google.generativeai as genai
+from rest_framework.parsers import MultiPartParser
+from rest_framework.decorators import parser_classes
+import PyPDF2
+from pptx import Presentation
+
 
 
 
@@ -164,4 +169,47 @@ def generate_flashcards(request):
         
     except Exception as e:
         print("Flashcard Error:", str(e))
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    
+#  The File Extraction Endpoint
+@api_view(['POST'])
+@parser_classes([MultiPartParser]) # This tells Django to expect a file, not JSON
+def extract_text_from_file(request):
+    file_obj = request.FILES.get('file')
+    
+    if not file_obj:
+        return Response({'error': 'No file uploaded'}, status=status.HTTP_400_BAD_REQUEST)
+
+    filename = file_obj.name.lower()
+    extracted_text = ""
+
+    try:
+        # 1. Handle Text Files
+        if filename.endswith('.txt'):
+            extracted_text = file_obj.read().decode('utf-8')
+        
+        # 2. Handle PDF Files
+        elif filename.endswith('.pdf'):
+            pdf_reader = PyPDF2.PdfReader(file_obj)
+            for page in pdf_reader.pages:
+                extracted_text += page.extract_text() + "\n"
+                
+        # 3. Handle PowerPoint Files
+        elif filename.endswith('.pptx'):
+            ppt = Presentation(file_obj)
+            for slide in ppt.slides:
+                for shape in slide.shapes:
+                    if hasattr(shape, "text"):
+                        extracted_text += shape.text + "\n"
+        
+        # 4. Block other file types
+        else:
+            return Response({'error': 'Please upload a PDF, PPTX, or TXT file.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Return the clean text to React
+        return Response({'text': extracted_text.strip()}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        print("File Extraction Error:", str(e))
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

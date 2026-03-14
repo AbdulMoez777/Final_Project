@@ -8,6 +8,38 @@ const QuizGenerator = () => {
   const [questions, setQuestions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
+
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('http://localhost:8000/api/extract-text/', {
+        method: 'POST',
+        body: formData, 
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // This drops the text into your text box!
+        setInputText(data.text); 
+      } else {
+        alert("Error reading file: " + data.error);
+      }
+    } catch (error) {
+      console.error("Upload Error:", error);
+      alert("Failed to upload the file.");
+    } finally {
+      setIsLoading(false);
+      event.target.value = null; 
+    }
+  };
+
   const handleGenerate = async () => {
     if (!inputText) return alert("Please enter some text first!");
     
@@ -53,6 +85,21 @@ const QuizGenerator = () => {
           
           {/* Left: Input Area */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            {/* 👇 NEW CODE ADDED HERE: The File Upload Button */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Upload a File (PDF, PPTX, TXT)
+              </label>
+              <input 
+                type="file" 
+                accept=".pdf,.pptx,.txt" 
+                onChange={handleFileUpload}
+                disabled={isLoading}
+                // Notice the purple colors below to match your UI!
+                className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 transition"
+              />
+            </div>
+            {/*  END OF  CODE */}
             <label className="block text-sm font-semibold text-slate-700 mb-2">Your Notes / Text</label>
             <textarea
               className="w-full h-64 p-4 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-500 outline-none resize-none transition"

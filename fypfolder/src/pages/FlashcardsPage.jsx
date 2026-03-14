@@ -6,6 +6,43 @@ const FlashcardsPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [flippedCards, setFlippedCards] = useState([]); // Keeps track of which cards are flipped
 
+
+  //  Function to handle file uploads
+  // This function takes the selected file and sends it to your new Django extract-text API
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Create a form package to send the file (since it's a file, not text)
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('http://localhost:8000/api/extract-text/', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Drop the extracted text straight into your existing textarea!
+        setInputText(data.text);
+      } else {
+        alert("Error reading file: " + data.error);
+      }
+    } catch (error) {
+      console.error("Upload Error:", error);
+      alert("Failed to upload the file.");
+    } finally {
+      setIsLoading(false);
+      // Reset the file input so you can upload the exact same file again if you want to
+      event.target.value = null;
+    }
+  };
+  //  END OF File Upload CODE
+
   // This function runs when you click "Generate"
   const handleGenerate = async () => {
     if (!inputText) return;
@@ -62,6 +99,19 @@ const FlashcardsPage = () => {
 
       {/* Input Section */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
+        {/* The Upload File Button */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Upload a File (PDF, PPTX, TXT) or Paste Text
+          </label>
+          <input
+            type="file"
+            accept=".pdf,.pptx,.txt"
+            onChange={handleFileUpload}
+            disabled={isLoading}
+            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
+          />
+        </div>
         <textarea
           className="w-full h-40 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
           placeholder="Paste your lecture notes, slides text, or study material here..."

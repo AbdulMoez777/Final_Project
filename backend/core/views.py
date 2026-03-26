@@ -10,19 +10,13 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.decorators import parser_classes
 import PyPDF2
 from pptx import Presentation
-
-
-
-
+import requests
 
 # Gemini APi
 genai.configure(api_key="AIzaSyBpavci2yP5zbCahxzRg6SMzEwkTn4TMDk")
 
-
 print("Loading AI Model... please wait...")
 summarizer = pipeline("summarization", model="Falconsai/text_summarization")
-
-quiz_generator = pipeline("text2text-generation", model="google/flan-t5-small")
 print("AI Model Ready!")
 
 @api_view(['POST'])
@@ -39,7 +33,6 @@ def signup(request):
 
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
 
 
 # LOGIN: Return 'is_admin' status
@@ -59,7 +52,7 @@ def login_view(request):
         return Response({'error': 'Invalid email or password'}, status=status.HTTP_401_UNAUTHORIZED)
     
 
-# Quiz View Function
+# 👇 NEW: The completely upgraded Gemini Quiz Generator
 @api_view(['POST'])
 def generate_quiz(request):
     text = request.data.get('text', '')
@@ -68,34 +61,41 @@ def generate_quiz(request):
         return Response({'error': 'No text provided'}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
+        # We give Gemini exact instructions
+        prompt = f"""
+        You are an expert teacher. Create a 5-question multiple-choice quiz based ONLY on the text below. 
+        Return ONLY a JSON array of objects. Do not include markdown formatting, greetings, or explanations.
+        Each object must have exactly these keys: "question", "options" (an array of 4 strings), and "answer" (a string matching one option).
         
-        prompts = [
-            f"generate a question about the main concept of: {text}",
-            f"generate a detailed question about: {text}",
-            f"generate a true or false question about: {text}"
-        ]
-        
-        generated_questions = []
+        Text to convert into a quiz: {text}
+        """
 
-        # LOOP: Ask the AI one by one
-        for prompt in prompts:
-            result = quiz_generator(prompt, max_length=64, do_sample=True, temperature=0.9)
-            question = result[0]['generated_text']
-            
-            # Basic cleanup: Ensure it has a question mark
-            if not question.endswith('?'):
-                question += '?'
-            
-            generated_questions.append(question)
+        # Call your active Gemini model
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        response = model.generate_content(prompt)
 
-        # Return the list of 3 questions
-        return Response({'quiz': generated_questions}, status=status.HTTP_200_OK)
+        # Clean up the response just in case
+        ai_text = response.text.strip()
+        if ai_text.startswith("```json"):
+            ai_text = ai_text[7:]
+        elif ai_text.startswith("```"):
+            ai_text = ai_text[3:]
+            
+        if ai_text.endswith("```"):
+            ai_text = ai_text[:-3]
+
+        # Convert to a list and send to React
+        quiz_data = json.loads(ai_text.strip()) 
+        return Response({'quiz': quiz_data}, status=status.HTTP_200_OK)
         
+    except json.JSONDecodeError:
+        return Response({'error': 'The AI did not format the quiz correctly. Please try again.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     except Exception as e:
         print("Quiz Error:", str(e))
-        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    # Manage Users (Get List & Delete)
+        return Response({'error': 'Failed to generate quiz. Please try again.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    
+# Manage Users (Get List & Delete)
 @api_view(['GET', 'DELETE'])
 def manage_users(request, user_id=None):
     if request.method == 'GET':
@@ -130,7 +130,7 @@ def summarize_text(request):
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-# 👇 NEW: The updated Gemini Flashcards View Function
+# The updated Gemini Flashcards View Function
 @api_view(['POST'])
 def generate_flashcards(request):
     text = request.data.get('text', '')

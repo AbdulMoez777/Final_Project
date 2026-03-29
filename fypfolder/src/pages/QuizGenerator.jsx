@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ArrowLeft, BrainCircuit, CheckCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, BrainCircuit, CheckCircle, Loader2, Sparkles, FileText, Trophy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const QuizGenerator = () => {
@@ -28,7 +28,6 @@ const QuizGenerator = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // This drops the text into your text box!
         setInputText(data.text);
       } else {
         alert("Error reading file: " + data.error);
@@ -72,7 +71,6 @@ const QuizGenerator = () => {
     }
   };
 
-  // ✅ ADD THIS NEW FUNCTION:
   const handleAnswerClick = (selectedOption) => {
     const isCorrect = selectedOption === quizData[currentQuestion].answer;
 
@@ -88,138 +86,196 @@ const QuizGenerator = () => {
     }
   };
 
+  // Helper array to show A, B, C, D on options
+  const optionLetters = ["A", "B", "C", "D"];
+
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-purple-50/50 p-4 md:p-8 font-sans text-slate-800">
+      <div className="max-w-5xl mx-auto">
+        
+        {/* Header Section */}
         <button
           onClick={() => navigate("/dashboard")}
-          className="flex items-center text-slate-500 hover:text-blue-600 mb-6 transition"
+          className="flex items-center text-slate-500 hover:text-purple-600 mb-8 transition-colors font-medium group"
         >
-          <ArrowLeft size={20} className="mr-2" /> Back to Dashboard
+          <ArrowLeft size={20} className="mr-2 group-hover:-translate-x-1 transition-transform" /> 
+          Back to Dashboard
         </button>
 
-        <h1 className="text-3xl font-bold text-slate-800 mb-2 flex items-center gap-3">
-          <BrainCircuit className="text-purple-600" size={32} /> AI Quiz
-          Generator
-        </h1>
-        <p className="text-slate-500 mb-8">
-          Paste your notes below, and AI will generate practice questions for
-          you.
-        </p>
-
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Left: Input Area */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-            {/* 👇 NEW CODE ADDED HERE: The File Upload Button */}
-            <div className="mb-6">
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Upload a File (PDF, PPTX, TXT)
-              </label>
-              <input
-                type="file"
-                accept=".pdf,.pptx,.txt"
-                onChange={handleFileUpload}
-                disabled={isLoading}
-                // Notice the purple colors below to match your UI!
-                className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 transition"
-              />
+        <div className="mb-10">
+          <h1 className="text-4xl font-extrabold text-slate-800 mb-3 flex items-center gap-3 tracking-tight">
+            <div className="p-3 bg-purple-100 text-purple-600 rounded-2xl shadow-inner">
+              <BrainCircuit size={32} />
             </div>
-            {/*  END OF  CODE */}
-            <label className="block text-sm font-semibold text-slate-700 mb-2">
-              Your Notes / Text
+            AI Quiz Generator
+          </h1>
+          <p className="text-lg text-slate-500 max-w-2xl">
+            Transform your study materials into an interactive assessment in seconds. Paste your notes or upload a file to begin.
+          </p>
+        </div>
+
+        <div className="grid lg:grid-cols-12 gap-8 items-start">
+          
+          {/* LEFT SIDE: Input Area */}
+          <div className="lg:col-span-5 bg-white p-6 md:p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
+            
+            <div className="mb-6 group">
+              <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-3 uppercase tracking-wider">
+                <FileText size={16} className="text-purple-500" />
+                Upload Document
+              </label>
+              <div className="relative border-2 border-dashed border-purple-200 rounded-2xl p-4 hover:bg-purple-50 hover:border-purple-400 transition-colors">
+                <input
+                  type="file"
+                  accept=".pdf,.pptx,.txt"
+                  onChange={handleFileUpload}
+                  disabled={isLoading}
+                  className="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-purple-600 file:text-white hover:file:bg-purple-700 transition cursor-pointer"
+                />
+              </div>
+            </div>
+            
+            <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-3 uppercase tracking-wider">
+               Text Content
             </label>
             <textarea
-              className="w-full h-64 p-4 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-500 outline-none resize-none transition"
-              placeholder="Paste your study material here..."
+              className="w-full h-60 p-5 bg-slate-50 rounded-2xl border border-slate-200 focus:bg-white focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none resize-none transition-all text-slate-600 leading-relaxed"
+              placeholder="Paste your syllabus, textbook chapter, or lecture notes here..."
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
             ></textarea>
 
             <button
               onClick={handleGenerate}
-              disabled={isLoading}
-              className="w-full mt-4 bg-purple-600 text-white py-3 rounded-xl font-bold hover:bg-purple-700 transition flex items-center justify-center gap-2 disabled:opacity-50"
+              disabled={isLoading || !inputText}
+              className="w-full mt-6 bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-4 rounded-2xl font-bold text-lg hover:from-purple-700 hover:to-indigo-700 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="animate-spin" /> Generating...
+                  <Loader2 className="animate-spin" size={24} /> Generating Magic...
                 </>
               ) : (
-                "Generate Questions"
+                <>
+                  <Sparkles size={24} /> Create My Quiz
+                </>
               )}
             </button>
           </div>
 
-          {/* ✅ PASTE THE NEW GAME BOARD HERE: */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col relative min-h-[500px]">
-            {/* Game Header */}
-            <div className="p-4 border-b border-slate-100 bg-purple-50 font-semibold text-purple-800 flex justify-between items-center">
-              <span>Interactive Quiz</span>
+          {/* RIGHT SIDE: Game Board */}
+          <div className="lg:col-span-7 bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden flex flex-col relative min-h-[600px]">
+            
+            {/* Game Header with Progress Bar */}
+            <div className="p-6 border-b border-slate-100 bg-gradient-to-r from-purple-50/50 to-indigo-50/50">
+              <div className="flex justify-between items-center mb-4">
+                <span className="font-black text-xl text-slate-800 tracking-tight">Live Assessment</span>
+                {quizData.length > 0 && !showResults && (
+                  <span className="bg-white text-purple-700 px-4 py-1.5 rounded-full text-sm font-bold shadow-sm border border-purple-100">
+                    Question {currentQuestion + 1} of {quizData.length}
+                  </span>
+                )}
+              </div>
+              
+              {/* Progress Bar Line */}
               {quizData.length > 0 && !showResults && (
-                <span className="bg-purple-200 text-purple-900 px-3 py-1 rounded-full text-sm">
-                  Q {currentQuestion + 1} / {quizData.length}
-                </span>
+                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                  <div 
+                    className="bg-gradient-to-r from-purple-500 to-indigo-500 h-full transition-all duration-500 ease-out" 
+                    style={{ width: `${((currentQuestion) / quizData.length) * 100}%` }}
+                  ></div>
+                </div>
               )}
             </div>
 
-            <div className="flex-1 p-6 overflow-y-auto bg-slate-50/50 flex flex-col justify-center">
+            <div className="flex-1 p-6 md:p-10 overflow-y-auto bg-slate-50/30 flex flex-col justify-center">
               {isLoading ? (
-                <div className="flex flex-col items-center justify-center text-slate-400 animate-pulse">
-                  <BrainCircuit size={48} className="mb-4 text-purple-300" />
-                  <p>Building your quiz...</p>
-                </div>
-              ) : showResults ? (
-                // Final Score Screen
-                <div className="flex flex-col items-center justify-center text-center animate-in fade-in duration-300">
-                  <CheckCircle size={64} className="text-green-500 mb-4" />
-                  <h2 className="text-2xl font-bold text-slate-800 mb-2">
-                    Quiz Complete!
-                  </h2>
-                  <p className="text-lg text-slate-600 mb-6">You scored</p>
-                  <div className="text-5xl font-extrabold text-purple-600 mb-8">
-                    {score}{" "}
-                    <span className="text-2xl text-slate-400">
-                      / {quizData.length}
-                    </span>
+                
+                // Loading State
+                <div className="flex flex-col items-center justify-center text-purple-400">
+                  <div className="relative">
+                    <BrainCircuit size={64} className="animate-pulse text-purple-300" />
+                    <Sparkles size={24} className="absolute -top-2 -right-2 animate-bounce text-indigo-400" />
                   </div>
+                  <p className="mt-6 font-semibold text-lg animate-pulse text-slate-500">Analyzing text and writing questions...</p>
+                </div>
+
+              ) : showResults ? (
+                
+                // Final Score Screen
+                <div className="flex flex-col items-center justify-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="w-24 h-24 bg-green-100 text-green-500 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                    <Trophy size={48} />
+                  </div>
+                  <h2 className="text-4xl font-black text-slate-800 mb-3">Assessment Complete!</h2>
+                  <p className="text-xl text-slate-500 mb-8 font-medium">Here is your final score</p>
+                  
+                  <div className="relative mb-10 group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-indigo-400 blur-xl opacity-20 group-hover:opacity-40 transition-opacity rounded-full"></div>
+                    <div className="relative bg-white border-4 border-purple-100 px-12 py-8 rounded-[3rem] shadow-xl">
+                      <span className="text-7xl font-black bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                        {score}
+                      </span>
+                      <span className="text-3xl text-slate-400 font-bold ml-2">/ {quizData.length}</span>
+                    </div>
+                  </div>
+
                   <button
                     onClick={() => {
                       setQuizData([]);
                       setInputText("");
+                      setShowResults(false); // Closes the score screen
+                      setScore(0);           // Resets the score
+                      setCurrentQuestion(0); // Resets the question counter
                     }}
-                    className="px-6 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition"
+                    className="px-8 py-4 bg-slate-800 hover:bg-slate-900 text-white rounded-2xl font-bold text-lg transition-all hover:shadow-lg hover:-translate-y-1"
                   >
-                    Create Another Quiz
+                    Start a New Session
                   </button>
                 </div>
+
               ) : quizData.length > 0 ? (
+                
                 // Active Question Screen
-                <div className="w-full max-w-md mx-auto">
-                  <h3 className="text-xl font-semibold text-slate-800 mb-6 leading-relaxed">
+                <div className="w-full max-w-xl mx-auto animate-in slide-in-from-right-8 fade-in duration-300">
+                  <h3 className="text-2xl font-bold text-slate-800 mb-8 leading-relaxed">
                     {quizData[currentQuestion].question}
                   </h3>
-                  <div className="flex flex-col gap-3">
+                  
+                  <div className="flex flex-col gap-4">
                     {quizData[currentQuestion].options.map((option, index) => (
                       <button
                         key={index}
                         onClick={() => handleAnswerClick(option)}
-                        className="w-full p-4 text-left border-2 border-slate-200 hover:border-purple-500 hover:bg-purple-50 rounded-xl transition text-slate-700 font-medium"
+                        className="group w-full p-5 text-left bg-white border-2 border-slate-100 hover:border-purple-400 hover:bg-purple-50 hover:shadow-md rounded-2xl transition-all duration-200 flex items-center"
                       >
-                        {option}
+                        <span className="flex-shrink-0 w-10 h-10 rounded-full bg-slate-100 group-hover:bg-purple-200 group-hover:text-purple-700 text-slate-500 flex items-center justify-center font-bold text-lg mr-4 transition-colors">
+                          {optionLetters[index]}
+                        </span>
+                        <span className="text-slate-700 font-semibold text-lg group-hover:text-purple-900">
+                          {option}
+                        </span>
                       </button>
                     ))}
                   </div>
                 </div>
+
               ) : (
+                
                 // Empty State
-                <div className="flex flex-col items-center justify-center text-slate-400 h-full">
-                  <BrainCircuit size={48} className="mb-2 opacity-20" />
-                  <p>Your interactive quiz will appear here</p>
+                <div className="flex flex-col items-center justify-center h-full text-center">
+                  <div className="w-32 h-32 bg-slate-50 rounded-full flex items-center justify-center mb-6 border-4 border-white shadow-sm">
+                    <BrainCircuit size={48} className="text-slate-300" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-700 mb-2">Ready to test your knowledge?</h3>
+                  <p className="text-slate-500 max-w-sm mx-auto">
+                    Upload a file or paste your notes on the left, and your AI-generated assessment will appear right here.
+                  </p>
                 </div>
+
               )}
             </div>
           </div>
+
         </div>
       </div>
     </div>

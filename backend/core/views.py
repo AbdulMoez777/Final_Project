@@ -63,7 +63,7 @@ def generate_quiz(request):
     try:
         # We give Gemini exact instructions
         prompt = f"""
-        You are an expert teacher. Create a 5-question multiple-choice quiz based ONLY on the text below. 
+        You are an expert teacher. Create a 10-question multiple-choice quiz based ONLY on the text below. 
         Return ONLY a JSON array of objects. Do not include markdown formatting, greetings, or explanations.
         Each object must have exactly these keys: "question", "options" (an array of 4 strings), and "answer" (a string matching one option).
         

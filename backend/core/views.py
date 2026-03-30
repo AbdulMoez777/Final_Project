@@ -11,6 +11,7 @@ from rest_framework.decorators import parser_classes
 import PyPDF2
 from pptx import Presentation
 import requests
+from .models import AIActivity
 
 # Gemini APi
 genai.configure(api_key="AIzaSyBpavci2yP5zbCahxzRg6SMzEwkTn4TMDk")
@@ -86,6 +87,11 @@ def generate_quiz(request):
 
         # Convert to a list and send to React
         quiz_data = json.loads(ai_text.strip()) 
+        AIActivity.objects.create(
+            activity_type="Quiz",
+            title="Interactive AI Quiz",
+            file_name="Pasted Notes" 
+        )
         return Response({'quiz': quiz_data}, status=status.HTTP_200_OK)
         
     except json.JSONDecodeError:
@@ -124,6 +130,12 @@ def summarize_text(request):
         
         
         summary_text = summary_result[0]['summary_text']
+        
+        AIActivity.objects.create(
+            activity_type="Summary",
+            title="Document Summary",
+            file_name="Pasted Notes" 
+        )
 
         return Response({'summary': summary_text}, status=status.HTTP_200_OK)
 
@@ -164,6 +176,12 @@ def generate_flashcards(request):
 
         # Convert the clean string into a real Python list
         flashcards = json.loads(ai_text.strip()) 
+        
+        AIActivity.objects.create(
+            activity_type="Flashcards",
+            title="Study Flashcards",
+            file_name="Pasted Notes" 
+        )
 
         return Response(flashcards, status=status.HTTP_200_OK)
         
@@ -213,3 +231,25 @@ def extract_text_from_file(request):
     except Exception as e:
         print("File Extraction Error:", str(e))
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    # ADDED: This is the function React calls to get the history!
+@api_view(['GET'])
+def get_recent_activity(request):
+    try:
+        # Grab the 5 most recent activities, newest first
+        activities = AIActivity.objects.all().order_by('-created_at')[:5]
+        
+        data = []
+        for act in activities:
+            data.append({
+                "id": act.id,
+                "type": act.activity_type,
+                "title": act.title,
+                "file": act.file_name,
+                "time": act.created_at.strftime("%b %d, %Y - %H:%M") 
+            })
+            
+        return Response(data, status=status.HTTP_200_OK)
+    except Exception as e:
+        print("Activity Fetch Error:", str(e))
+        return Response({'error': 'Failed to fetch activity'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

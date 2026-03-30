@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft, PlusCircle } from "lucide-react";
 
 const FlashcardsPage = () => {
+  const navigate = useNavigate();
   const [inputText, setInputText] = useState('');
   const [flashcards, setFlashcards] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -92,8 +95,22 @@ const FlashcardsPage = () => {
     }
   };
 
+  // Function to clear the board and start over
+  const handleGenerateNew = () => {
+    setFlashcards([]);
+    setInputText('');
+    setFlippedCards([]);
+  };
+
   return (
     <div className="p-8 max-w-6xl mx-auto">
+      <button
+          onClick={() => navigate("/dashboard")}
+          className="flex items-center text-slate-500 hover:text-orange-500 mb-8 transition-colors font-medium group"
+        >
+          <ArrowLeft size={20} className="mr-2 group-hover:-translate-x-1 transition-transform" /> 
+          Back to Dashboard
+        </button>
       <h1 className="text-3xl font-bold mb-2">Generate Flashcards</h1>
       <p className="text-gray-600 mb-8">Paste your study notes below and let AI create revision cards for you.</p>
 
@@ -161,6 +178,16 @@ const FlashcardsPage = () => {
               );
             })}
 
+          </div>
+
+          <div className="w-full flex justify-end mt-10">
+            <button
+              onClick={handleGenerateNew}
+              className="flex items-center gap-2 px-6 py-2.5 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-all shadow-sm font-medium hover:shadow-md hover:-translate-y-0.5"
+            >
+              <PlusCircle size={18} />
+              Generate New Flashcards
+            </button>
           </div>
         </div>
       )}

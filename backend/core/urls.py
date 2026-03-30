@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path
-from core.views import signup, login_view, summarize_text, manage_users, generate_quiz, generate_flashcards, extract_text_from_file, get_recent_activity
+from core.views import signup, login_view, summarize_text, manage_users, generate_quiz, generate_flashcards, extract_text_from_file, get_recent_activity, save_quiz_score
 
 
 urlpatterns = [
@@ -15,4 +15,5 @@ urlpatterns = [
     path('api/users/<int:user_id>/', manage_users), # To Delete specific user
     path('api/extract-text/', extract_text_from_file), # Extract text from PDF or PPTX
     path('api/recent-activity/', get_recent_activity, name='recent_activity'),
+    path('api/save-score/', save_quiz_score, name='save_score'),
 ]

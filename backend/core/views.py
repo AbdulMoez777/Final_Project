@@ -53,7 +53,7 @@ def login_view(request):
         return Response({'error': 'Invalid email or password'}, status=status.HTTP_401_UNAUTHORIZED)
     
 
-# 👇 NEW: The completely upgraded Gemini Quiz Generator
+#Gemini Quiz Generator
 @api_view(['POST'])
 def generate_quiz(request):
     text = request.data.get('text', '')
@@ -62,7 +62,6 @@ def generate_quiz(request):
         return Response({'error': 'No text provided'}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        # We give Gemini exact instructions
         prompt = f"""
         You are an expert teacher. Create a 10-question multiple-choice quiz based ONLY on the text below. 
         Return ONLY a JSON array of objects. Do not include markdown formatting, greetings, or explanations.
@@ -71,11 +70,9 @@ def generate_quiz(request):
         Text to convert into a quiz: {text}
         """
 
-        # Call your active Gemini model
         model = genai.GenerativeModel('gemini-2.5-flash')
         response = model.generate_content(prompt)
 
-        # Clean up the response just in case
         ai_text = response.text.strip()
         if ai_text.startswith("```json"):
             ai_text = ai_text[7:]
@@ -85,13 +82,10 @@ def generate_quiz(request):
         if ai_text.endswith("```"):
             ai_text = ai_text[:-3]
 
-        # Convert to a list and send to React
+        # 1. First, we create the quiz_data variable
         quiz_data = json.loads(ai_text.strip()) 
-        AIActivity.objects.create(
-            activity_type="Quiz",
-            title="Interactive AI Quiz",
-            file_name="Pasted Notes" 
-        )
+        
+        # 2. Then, we return it to React
         return Response({'quiz': quiz_data}, status=status.HTTP_200_OK)
         
     except json.JSONDecodeError:
@@ -236,20 +230,59 @@ def extract_text_from_file(request):
 @api_view(['GET'])
 def get_recent_activity(request):
     try:
-        # Grab the 5 most recent activities, newest first
+        # 1. Grab the 5 most recent activities for the list
         activities = AIActivity.objects.all().order_by('-created_at')[:5]
         
-        data = []
+        recent_list = []
         for act in activities:
-            data.append({
+            recent_list.append({
                 "id": act.id,
                 "type": act.activity_type,
                 "title": act.title,
                 "file": act.file_name,
-                "time": act.created_at.strftime("%b %d, %Y - %H:%M") 
+                "time": act.created_at.strftime("%b %d, %Y - %H:%M"),
+                "score": act.score, 
+                "total": act.total_questions
             })
             
-        return Response(data, status=status.HTTP_200_OK)
+        #  Calculate dynamic stats for "Your Progress"
+        total_quizzes = AIActivity.objects.filter(activity_type="Quiz").count()
+        total_flashcards = AIActivity.objects.filter(activity_type="Flashcards").count()
+        
+        # Count unique files uploaded by looking at the file_names (excluding 'Pasted Notes')
+        total_files = AIActivity.objects.exclude(file_name="Pasted Notes").values('file_name').distinct().count()
+
+        # Send EVERYTHING back to React in one package
+        dashboard_data = {
+            "recent_activity": recent_list,
+            "progress_stats": {
+                "quizzes_taken": total_quizzes,
+                "flashcards_reviewed": total_flashcards,
+                "files_uploaded": total_files
+            }
+        }
+            
+        return Response(dashboard_data, status=status.HTTP_200_OK)
+        
     except Exception as e:
         print("Activity Fetch Error:", str(e))
         return Response({'error': 'Failed to fetch activity'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def save_quiz_score(request):
+    try:
+        # Get the final score data from React
+        final_score = request.data.get('score')
+        total_q = request.data.get('total')
+        
+        # Save it to the database!
+        AIActivity.objects.create(
+            activity_type="Quiz",
+            title="Interactive AI Quiz",
+            file_name="Completed Quiz",
+            score=final_score,
+            total_questions=total_q
+        )
+        return Response({'message': 'Score saved successfully!'}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

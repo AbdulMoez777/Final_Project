@@ -22,7 +22,7 @@ const QuizGenerator = () => {
   const [score, setScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
 
-  // 👇 NEW: This remembers the user's exact answers for the review screen!
+  //  This remembers the user's exact answers for the review screen!
   const [userAnswers, setUserAnswers] = useState([]);
 
   const handleFileUpload = async (event) => {
@@ -88,15 +88,15 @@ const QuizGenerator = () => {
     }
   };
 
-  // 👇 UPDATED: Now saves the user's choice to the history log
-  const handleAnswerClick = (selectedOption) => {
+  //  Now saves the final score to Django when the quiz ends!
+  const handleAnswerClick = async (selectedOption) => {
     const isCorrect = selectedOption === quizData[currentQuestion].answer;
 
-    if (isCorrect) {
-      setScore((prev) => prev + 1);
-    }
+    // Calculate what the score will be after this click
+    const newScore = isCorrect ? score + 1 : score;
+    if (isCorrect) setScore(newScore);
 
-    // Save this question's result to our memory array
+    // Save to history for the review screen
     setUserAnswers((prev) => [
       ...prev,
       {
@@ -108,10 +108,26 @@ const QuizGenerator = () => {
     ]);
 
     const nextQuestion = currentQuestion + 1;
+
+    // Are we moving to the next question, or is the quiz over?
     if (nextQuestion < quizData.length) {
       setCurrentQuestion(nextQuestion);
     } else {
-      setShowResults(true);
+      setShowResults(true); // Show the trophy screen
+
+      // The quiz is over! Send the final score to Django instantly!
+      try {
+        await fetch("http://127.0.0.1:8000/api/save-score/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            score: newScore,
+            total: quizData.length,
+          }),
+        });
+      } catch (error) {
+        console.error("Failed to save score to database");
+      }
     }
   };
 
@@ -239,7 +255,7 @@ const QuizGenerator = () => {
                   </p>
                 </div>
               ) : showResults ? (
-                // 👇 UPDATED: Final Score Screen WITH Detailed Review
+                //  Final Score Screen WITH Detailed Review
                 <div className="flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-500 pb-8">
                   {/* The Big Score */}
                   <div className="w-20 h-20 bg-green-100 text-green-500 rounded-full flex items-center justify-center mb-4 shadow-inner">

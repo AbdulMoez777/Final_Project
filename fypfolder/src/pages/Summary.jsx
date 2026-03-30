@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Sparkles, Copy, Check } from 'lucide-react';
+import { ArrowLeft, Sparkles, Copy, Check, PlusCircle } from 'lucide-react'; 
 import { useNavigate } from 'react-router-dom';
 
 const Summary = () => {
@@ -8,8 +8,6 @@ const Summary = () => {
   const [summary, setSummary] = useState('');
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
-
-
 
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
@@ -28,7 +26,6 @@ const Summary = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // This drops the text into your text box!
         setInputText(data.text);
       } else {
         alert("Error reading file: " + data.error);
@@ -37,7 +34,7 @@ const Summary = () => {
       console.error("Upload Error:", error);
       alert("Failed to upload the file.");
     } finally {
-      setIsLoading(false);
+      setLoading(false); 
       event.target.value = null;
     }
   };
@@ -46,7 +43,7 @@ const Summary = () => {
     if (!inputText) return;
 
     setLoading(true);
-    setSummary(''); // Clear old summary
+    setSummary('');
 
     try {
       const response = await fetch('http://127.0.0.1:8000/api/summarize/', {
@@ -75,25 +72,41 @@ const Summary = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleGenerateNew = () => {
+    setSummary('');
+    setInputText('');
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 p-8 flex flex-col items-center">
+    <div className="min-h-screen bg-slate-50 p-8 flex flex-col items-center font-sans">
 
       {/* Header */}
       <div className="w-full max-w-4xl flex items-center justify-between mb-8">
-        <button onClick={() => navigate('/dashboard')} className="flex items-center text-slate-500 hover:text-blue-600 font-medium">
-          <ArrowLeft size={20} className="mr-2" /> Back to Dashboard
-        </button>
-        <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+        
+        {/* Left Side: Back Button stays at the top! */}
+        <div className="w-40">
+          <button 
+            onClick={() => navigate('/dashboard')} 
+            className="flex items-center text-slate-500 hover:text-blue-600 font-medium transition-colors group"
+          >
+            <ArrowLeft size={20} className="mr-2 group-hover:-translate-x-1 transition-transform" /> 
+            Back
+          </button>
+        </div>
+
+        {/* Center: Title */}
+        <h1 className="text-2xl font-bold text-slate-800 flex items-center justify-center gap-2 flex-1">
           <Sparkles className="text-blue-600" /> AI Summarizer
         </h1>
-        <div className="w-20"></div> {/* Spacer for centering */}
+
+        {/* Right Side: Empty Spacer to keep the title perfectly centered */}
+        <div className="w-40"></div>
       </div>
 
       <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-8 h-[600px]">
 
         {/* Input Side */}
         <div className="flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          {/* 👇 NEW CODE ADDED HERE: I updated this header bar to hold your File Upload button */}
           <div className="p-4 border-b border-slate-100 bg-slate-50 flex flex-col gap-3">
             <span className="font-semibold text-slate-700">Paste your text or upload a file</span>
             <input 
@@ -104,7 +117,6 @@ const Summary = () => {
               className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition cursor-pointer"
             />
           </div>
-          {/* ☝️ END OF NEW CODE */}
           <textarea
             className="flex-1 p-6 resize-none focus:outline-none text-slate-600 leading-relaxed"
             placeholder="Paste a long article, notes, or paragraph here..."
@@ -143,7 +155,7 @@ const Summary = () => {
                 <p>Analyzing text...</p>
               </div>
             ) : summary ? (
-              <p className="text-slate-700 leading-loose text-lg">{summary}</p>
+              <p className="text-slate-700 leading-loose text-lg whitespace-pre-wrap">{summary}</p>
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-slate-400">
                 <p>Summary will appear here</p>
@@ -153,6 +165,20 @@ const Summary = () => {
         </div>
 
       </div>
+
+      {/* 👇 NEW: Bottom Bar with ONLY the "Generate New" button aligned to the right */}
+      <div className="w-full max-w-4xl flex justify-end mt-6">
+        {summary && (
+          <button
+            onClick={handleGenerateNew}
+            className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-sm font-medium hover:shadow-md hover:-translate-y-0.5"
+          >
+            <PlusCircle size={18} />
+            Generate New Summary
+          </button>
+        )}
+      </div>
+
     </div>
   );
 };

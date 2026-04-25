@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
 
 const Login = () => {
   
@@ -28,7 +29,8 @@ const Login = () => {
       const data = await response.json();
 
       if (response.ok) {
-        
+
+        localStorage.setItem('token', data.token);
         console.log("Login Success!");
         
         
@@ -46,6 +48,43 @@ const Login = () => {
     } catch (error) {
       console.error("Connection Error:", error);
       alert('Failed to connect to the server. Is the backend running?');
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      // 1. Send the Google token to our Django backend
+      const response = await fetch('http://127.0.0.1:8000/api/auth/google/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          access_token: credentialResponse.credential, // The token from Google
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // 2. Django verified it and created the user! 
+        console.log("Backend accepted Google Login!", data);
+        
+        // 3. Save the NEW ticket, overwriting the hello@gmail.com ticket
+        // (Assuming you use localStorage for tokens. If you use cookies, you can skip this line)
+        if (data.key) {
+            localStorage.setItem('token', data.key); 
+        }
+
+        // 4. NOW we go to the dashboard
+        navigate('/dashboard');
+      } else {
+        console.error("Backend rejected Google token:", data);
+        alert("Server failed to verify Google Login.");
+      }
+    } catch (error) {
+      console.error("Error during Google Login:", error);
+      alert("Cannot connect to backend.");
     }
   };
 
@@ -97,6 +136,22 @@ const Login = () => {
           >
             Sign In
           </button>
+        </div>
+
+        <div className="relative flex items-center justify-center w-full mt-6 mb-6">
+          <div className="border-t border-slate-200 w-full"></div>
+          <span className="bg-white px-3 text-sm text-slate-400 absolute">Or continue with</span>
+        </div>
+
+        <div className="flex justify-center w-full">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => {
+              console.log('Google Login Failed');
+              alert("Google Login Failed!");
+            }}
+            useOneTap
+          />
         </div>
 
         <div className="mt-6 text-center border-t border-slate-100 pt-4">

@@ -1,46 +1,65 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  LayoutDashboard, 
-  FileText, 
-  BrainCircuit, 
-  Layers, 
-  UploadCloud, 
-  Settings, 
-  LogOut, 
-  Search, 
-  Bell, 
+import React, { useState, useEffect } from "react";
+import {
+  LayoutDashboard,
+  FileText,
+  BrainCircuit,
+  Layers,
+  UploadCloud,
+  Settings,
+  LogOut,
+  Search,
+  Bell,
   Zap,
   Loader2,
-  CheckCircle
-} from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+  CheckCircle,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  
+
   const [recentActivities, setRecentActivities] = useState([]);
-  
+
   // 👇 NEW: State to hold your actual database stats
   const [progressStats, setProgressStats] = useState({
     quizzes_taken: 0,
     flashcards_reviewed: 0,
-    files_uploaded: 0
+    files_uploaded: 0,
   });
-  
+
   const [isLoadingActivities, setIsLoadingActivities] = useState(true);
 
   // 👇 UPDATED: Fetches the new combined data structure from Django
   useEffect(() => {
     const fetchRecentActivity = async () => {
       try {
-        const response = await fetch('http://127.0.0.1:8000/api/recent-activity/');
-        
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+          console.warn("No token found. Redirecting to login.");
+          navigate("/login");
+          return;
+        }
+
+        const response = await fetch(
+          "http://127.0.0.1:8000/api/recent-activity/",
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Token ${token}`,
+              "Content-Type": "application/json",
+            },
+          },
+        );
+
         if (response.ok) {
           const data = await response.json();
-          // Load the list
-          setRecentActivities(data.recent_activity); 
-          // Load the real numbers for "Your Progress"
+          setRecentActivities(data.recent_activity);
           setProgressStats(data.progress_stats);
+        } else if (response.status === 401) {
+          // If Django says "Unauthorized" (maybe the token expired)
+          localStorage.removeItem("token");
+          navigate("/login");
         } else {
           console.error("Failed to fetch activity from server");
         }
@@ -55,12 +74,12 @@ const Dashboard = () => {
   }, []);
 
   const handleLogout = () => {
-    navigate('/login');
+    localStorage.removeItem("token");
+    navigate("/login");
   };
 
   return (
     <div className="flex h-screen bg-slate-50 font-sans">
-      
       {/* --- SIDEBAR --- */}
       <aside className="w-64 bg-white border-r border-slate-200 hidden md:flex flex-col">
         <div className="p-6">
@@ -68,18 +87,34 @@ const Dashboard = () => {
             <BrainCircuit className="fill-blue-600 text-white" /> StudyAI
           </h1>
         </div>
-        
+
         <nav className="flex-1 px-4 space-y-2">
-          <SidebarItem icon={<LayoutDashboard size={20} />} text="Dashboard" active />
-          <SidebarItem onClick={() => navigate('/summary')} icon={<FileText size={20} />} text="Summarizer" />
-          <SidebarItem onClick={() => navigate('/quiz-generator')} icon={<Zap size={20} />} text="Quiz Generator" />
-          <SidebarItem onClick={() => navigate('/flashcards')} icon={<Layers size={20} />} text="Flashcards" />
+          <SidebarItem
+            icon={<LayoutDashboard size={20} />}
+            text="Dashboard"
+            active
+          />
+          <SidebarItem
+            onClick={() => navigate("/summary")}
+            icon={<FileText size={20} />}
+            text="Summarizer"
+          />
+          <SidebarItem
+            onClick={() => navigate("/quiz-generator")}
+            icon={<Zap size={20} />}
+            text="Quiz Generator"
+          />
+          <SidebarItem
+            onClick={() => navigate("/flashcards")}
+            icon={<Layers size={20} />}
+            text="Flashcards"
+          />
           <SidebarItem icon={<UploadCloud size={20} />} text="My Files" />
         </nav>
 
         <div className="p-4 border-t border-slate-100">
           <SidebarItem icon={<Settings size={20} />} text="Settings" />
-          <button 
+          <button
             onClick={handleLogout}
             className="flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl w-full transition-colors font-medium"
           >
@@ -90,7 +125,6 @@ const Dashboard = () => {
 
       {/* --- MAIN CONTENT --- */}
       <main className="flex-1 flex flex-col overflow-hidden">
-        
         {/* Header */}
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8">
           <div className="flex items-center gap-4 text-slate-500">
@@ -98,10 +132,13 @@ const Dashboard = () => {
           </div>
           <div className="flex items-center gap-6">
             <div className="relative">
-              <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
-              <input 
-                type="text" 
-                placeholder="Search summaries..." 
+              <Search
+                className="absolute left-3 top-2.5 text-slate-400"
+                size={18}
+              />
+              <input
+                type="text"
+                placeholder="Search summaries..."
                 className="pl-10 pr-4 py-2 bg-slate-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 w-64"
               />
             </div>
@@ -118,51 +155,65 @@ const Dashboard = () => {
         {/* Scrollable Dashboard Area */}
         <div className="flex-1 overflow-y-auto p-8">
           <div className="max-w-6xl mx-auto">
-            
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-slate-900">Welcome back, Abdul Moez! 👋</h1>
-              <p className="text-slate-500 mt-1">Ready to generate some new study materials today?</p>
+              <h1 className="text-3xl font-bold text-slate-900">
+                Welcome back, Abdul Moez! 👋
+              </h1>
+              <p className="text-slate-500 mt-1">
+                Ready to generate some new study materials today?
+              </p>
             </div>
 
             {/* Quick Actions */}
-            <h3 className="text-lg font-bold text-slate-800 mb-4">Quick Actions</h3>
+            <h3 className="text-lg font-bold text-slate-800 mb-4">
+              Quick Actions
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <ActionCard 
-                onClick={() => navigate('/summary')}
-                title="Generate Summary" 
-                desc="Upload notes to get a concise summary." 
-                icon={<FileText size={32} className="text-white" />} 
+              <ActionCard
+                onClick={() => navigate("/summary")}
+                title="Generate Summary"
+                desc="Upload notes to get a concise summary."
+                icon={<FileText size={32} className="text-white" />}
                 color="bg-blue-600"
               />
-              <ActionCard 
-                onClick={() => navigate('/quiz-generator')}
-                title="Create Quiz" 
-                desc="Test your knowledge with AI questions." 
-                icon={<Zap size={32} className="text-white" />} 
+              <ActionCard
+                onClick={() => navigate("/quiz-generator")}
+                title="Create Quiz"
+                desc="Test your knowledge with AI questions."
+                icon={<Zap size={32} className="text-white" />}
                 color="bg-purple-600"
               />
-              <ActionCard 
-                onClick={() => navigate('/flashcards')}
-                title="Make Flashcards" 
-                desc="Convert slides into revision cards." 
-                icon={<Layers size={32} className="text-white" />} 
+              <ActionCard
+                onClick={() => navigate("/flashcards")}
+                title="Make Flashcards"
+                desc="Convert slides into revision cards."
+                icon={<Layers size={32} className="text-white" />}
                 color="bg-orange-500"
               />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              
               {/* Left Column: Stats & Goals */}
               <div className="space-y-8">
-                
                 {/* 👇 UPDATED: Stats Row now uses Real Data */}
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                   <h3 className="font-bold text-slate-800 mb-4">Your Progress</h3>
-                   <div className="space-y-4">
-                      <StatRow label="Files Uploaded" value={progressStats.files_uploaded} />
-                      <StatRow label="Quizzes Taken" value={progressStats.quizzes_taken} />
-                      <StatRow label="Flashcards Created" value={progressStats.flashcards_reviewed} />
-                   </div>
+                  <h3 className="font-bold text-slate-800 mb-4">
+                    Your Progress
+                  </h3>
+                  <div className="space-y-4">
+                    <StatRow
+                      label="Files Uploaded"
+                      value={progressStats.files_uploaded}
+                    />
+                    <StatRow
+                      label="Quizzes Taken"
+                      value={progressStats.quizzes_taken}
+                    />
+                    <StatRow
+                      label="Flashcards Created"
+                      value={progressStats.flashcards_reviewed}
+                    />
+                  </div>
                 </div>
 
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
@@ -177,8 +228,10 @@ const Dashboard = () => {
 
               {/* Right Column: Recent Activity */}
               <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                <h3 className="font-bold text-slate-800 mb-4">Recent AI Activity</h3>
-                
+                <h3 className="font-bold text-slate-800 mb-4">
+                  Recent AI Activity
+                </h3>
+
                 <div className="space-y-4">
                   {isLoadingActivities ? (
                     <div className="flex flex-col items-center justify-center py-10 text-slate-400">
@@ -187,15 +240,20 @@ const Dashboard = () => {
                     </div>
                   ) : recentActivities.length > 0 ? (
                     recentActivities.map((activity) => (
-                      <DynamicActivityItem key={activity.id} activity={activity} />
+                      <DynamicActivityItem
+                        key={activity.id}
+                        activity={activity}
+                      />
                     ))
                   ) : (
                     <div className="text-center py-10 text-slate-500">
-                      <p>No recent activity found. Generate a quiz or summary to get started!</p>
+                      <p>
+                        No recent activity found. Generate a quiz or summary to
+                        get started!
+                      </p>
                     </div>
                   )}
                 </div>
-
               </div>
             </div>
           </div>
@@ -208,18 +266,19 @@ const Dashboard = () => {
 /* --- REUSABLE COMPONENTS --- */
 
 const SidebarItem = ({ icon, text, active, onClick }) => (
-  <button 
-    onClick={onClick} 
-    className={`flex items-center gap-3 px-4 py-3 rounded-xl w-full transition-all font-medium ${active ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'}`}
+  <button
+    onClick={onClick}
+    className={`flex items-center gap-3 px-4 py-3 rounded-xl w-full transition-all font-medium ${active ? "bg-blue-600 text-white shadow-md" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"}`}
   >
     {icon} {text}
   </button>
 );
 
 const ActionCard = ({ title, desc, icon, color, onClick }) => (
-  <button 
-   onClick={onClick}
-   className={`${color} p-6 rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all text-left group w-full`}>
+  <button
+    onClick={onClick}
+    className={`${color} p-6 rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all text-left group w-full`}
+  >
     <div className="bg-white/20 w-14 h-14 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
       {icon}
     </div>
@@ -237,10 +296,16 @@ const StatRow = ({ label, value }) => (
 
 const GoalItem = ({ text, completed }) => (
   <div className="flex items-center gap-3">
-    <div className={`w-5 h-5 rounded border flex items-center justify-center ${completed ? 'bg-blue-600 border-blue-600' : 'border-slate-300'}`}>
+    <div
+      className={`w-5 h-5 rounded border flex items-center justify-center ${completed ? "bg-blue-600 border-blue-600" : "border-slate-300"}`}
+    >
       {completed && <div className="w-2 h-2 bg-white rounded-full"></div>}
     </div>
-    <span className={`text-sm ${completed ? 'text-slate-400 line-through' : 'text-slate-700'}`}>{text}</span>
+    <span
+      className={`text-sm ${completed ? "text-slate-400 line-through" : "text-slate-700"}`}
+    >
+      {text}
+    </span>
   </div>
 );
 
@@ -264,7 +329,9 @@ const DynamicActivityItem = ({ activity }) => {
   return (
     <div className="flex items-center justify-between p-4 border border-slate-100 rounded-xl hover:border-blue-200 transition-colors bg-slate-50/50">
       <div className="flex items-center gap-4">
-        <div className={`w-10 h-10 ${bgClass} ${iconClass} rounded-full flex items-center justify-center flex-shrink-0`}>
+        <div
+          className={`w-10 h-10 ${bgClass} ${iconClass} rounded-full flex items-center justify-center flex-shrink-0`}
+        >
           {icon}
         </div>
         <div>
@@ -278,13 +345,16 @@ const DynamicActivityItem = ({ activity }) => {
             )}
           </div>
           <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-             Generated from: <span className="font-medium text-slate-600">{activity.file}</span>
+            Generated from:{" "}
+            <span className="font-medium text-slate-600">{activity.file}</span>
           </p>
         </div>
       </div>
       <div className="text-right flex flex-col items-end">
-         <span className="inline-block px-2 py-1 bg-white border border-slate-200 rounded text-xs font-bold text-slate-600 mb-1">{activity.type}</span>
-         <p className="text-xs text-slate-400">{activity.time}</p>
+        <span className="inline-block px-2 py-1 bg-white border border-slate-200 rounded text-xs font-bold text-slate-600 mb-1">
+          {activity.type}
+        </span>
+        <p className="text-xs text-slate-400">{activity.time}</p>
       </div>
     </div>
   );

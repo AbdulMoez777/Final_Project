@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Check, X } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -58,6 +59,43 @@ const Signup = () => {
       setError("Failed to connect to the server. Is it running?");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      // 1. Send the Google token to our Django backend
+      const response = await fetch('http://127.0.0.1:8000/api/auth/google/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          access_token: credentialResponse.credential, // The token from Google
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // 2. Django verified it and created the user! 
+        console.log("Backend accepted Google Login!", data);
+        
+        // 3. Save the NEW ticket, overwriting the hello@gmail.com ticket
+        // (Assuming you use localStorage for tokens. If you use cookies, you can skip this line)
+        if (data.key) {
+            localStorage.setItem('token', data.key); 
+        }
+
+        // 4. NOW we go to the dashboard
+        navigate('/dashboard');
+      } else {
+        console.error("Backend rejected Google token:", data);
+        alert("Server failed to verify Google Login.");
+      }
+    } catch (error) {
+      console.error("Error during Google Login:", error);
+      alert("Cannot connect to backend.");
     }
   };
 
@@ -125,18 +163,24 @@ const Signup = () => {
           >
             {loading ? "Creating Account..." : "Create Account"}
           </button>
-
-          {/* Social Icons (Visual only for now) */}
-          <div className="relative flex py-2 items-center">
+          
+          <div className="relative flex py-2 items-center mt-2">
             <div className="flex-grow border-t border-slate-200"></div>
             <span className="flex-shrink-0 mx-4 text-slate-400 text-xs">Or continue with</span>
             <div className="flex-grow border-t border-slate-200"></div>
           </div>
-          <div className="flex gap-4 justify-center">
-             <SocialButton icon="G" color="text-red-500" />
-             <SocialButton icon="" color="text-slate-900" />
-             <SocialButton icon="⊞" color="text-blue-500" />
+          
+          <div className="flex justify-center w-full">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => {
+                console.log('Google Signup Failed');
+                alert("Google Signup Failed!");
+              }}
+              useOneTap
+            />
           </div>
+
         </div>
       </div>
     </div>

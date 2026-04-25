@@ -12,9 +12,12 @@ import PyPDF2
 from pptx import Presentation
 import requests
 from .models import AIActivity
+from rest_framework.decorators import permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authtoken.models import Token
 
 # Gemini APi
-genai.configure(api_key="AIzaSyBpavci2yP5zbCahxzRg6SMzEwkTn4TMDk")
+genai.configure(api_key="AIzaSyA_BHAvWeyDy5FgsXcovExxV5oEwXMwYwU")
 
 print("Loading AI Model... please wait...")
 summarizer = pipeline("summarization", model="Falconsai/text_summarization")
@@ -44,8 +47,9 @@ def login_view(request):
     user = authenticate(username=email, password=password)
 
     if user is not None:
-        # Check if user is an Admin (is_staff)
+        token, _ = Token.objects.get_or_create(user=user)
         return Response({
+            'token': token.key,
             'message': 'Login Successful!',
             'is_admin': user.is_staff  
         }, status=status.HTTP_200_OK)
@@ -91,7 +95,16 @@ def generate_quiz(request):
     except json.JSONDecodeError:
         return Response({'error': 'The AI did not format the quiz correctly. Please try again.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     except Exception as e:
-        print("Quiz Error:", str(e))
+        error_message = str(e)
+        print("Quiz Error:", error_message)
+        
+        # Check if Google blocked us for going too fast
+        if "429" in error_message or "Quota" in error_message:
+            return Response(
+                {'error': 'Whoa there! The AI is taking a quick breather. Please wait 60 seconds and try again.'}, 
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
+            
         return Response({'error': 'Failed to generate quiz. Please try again.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     
@@ -112,6 +125,7 @@ def manage_users(request, user_id=None):
             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
     
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def summarize_text(request):
     try:
         text_to_summarize = request.data.get('text')
@@ -126,6 +140,7 @@ def summarize_text(request):
         summary_text = summary_result[0]['summary_text']
         
         AIActivity.objects.create(
+            user=request.user,
             activity_type="Summary",
             title="Document Summary",
             file_name="Pasted Notes" 
@@ -138,6 +153,7 @@ def summarize_text(request):
 
 # The updated Gemini Flashcards View Function
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def generate_flashcards(request):
     text = request.data.get('text', '')
     
@@ -172,6 +188,7 @@ def generate_flashcards(request):
         flashcards = json.loads(ai_text.strip()) 
         
         AIActivity.objects.create(
+            user=request.user,
             activity_type="Flashcards",
             title="Study Flashcards",
             file_name="Pasted Notes" 
@@ -180,8 +197,17 @@ def generate_flashcards(request):
         return Response(flashcards, status=status.HTTP_200_OK)
         
     except Exception as e:
-        print("Flashcard Error:", str(e))
-        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        error_message = str(e)
+        print("Flashcard Error:", error_message)
+        
+        # Check if Google blocked us for going too fast
+        if "429" in error_message or "Quota" in error_message:
+            return Response(
+                {'error': 'Whoa there! The AI is taking a quick breather. Please wait 60 seconds and try again.'}, 
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
+            
+        return Response({'error': 'Failed to generate flashcards. Please try again.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     
 #  The File Extraction Endpoint
@@ -228,10 +254,11 @@ def extract_text_from_file(request):
 
     # ADDED: This is the function React calls to get the history!
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_recent_activity(request):
     try:
-        # 1. Grab the 5 most recent activities for the list
-        activities = AIActivity.objects.all().order_by('-created_at')[:5]
+        
+        activities = AIActivity.objects.filter(user=request.user).order_by('-created_at')[:5]
         
         recent_list = []
         for act in activities:
@@ -246,11 +273,12 @@ def get_recent_activity(request):
             })
             
         #  Calculate dynamic stats for "Your Progress"
-        total_quizzes = AIActivity.objects.filter(activity_type="Quiz").count()
-        total_flashcards = AIActivity.objects.filter(activity_type="Flashcards").count()
+        total_quizzes = AIActivity.objects.filter(user=request.user, activity_type="Quiz").count()
+        total_flashcards = AIActivity.objects.filter(user=request.user, activity_type="Flashcards").count()
+        
         
         # Count unique files uploaded by looking at the file_names (excluding 'Pasted Notes')
-        total_files = AIActivity.objects.exclude(file_name="Pasted Notes").values('file_name').distinct().count()
+        total_files = AIActivity.objects.filter(user=request.user).exclude(file_name="Pasted Notes").values('file_name').distinct().count()
 
         # Send EVERYTHING back to React in one package
         dashboard_data = {
@@ -269,6 +297,7 @@ def get_recent_activity(request):
         return Response({'error': 'Failed to fetch activity'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def save_quiz_score(request):
     try:
         # Get the final score data from React
@@ -277,6 +306,7 @@ def save_quiz_score(request):
         
         # Save it to the database!
         AIActivity.objects.create(
+            user=request.user,
             activity_type="Quiz",
             title="Interactive AI Quiz",
             file_name="Completed Quiz",

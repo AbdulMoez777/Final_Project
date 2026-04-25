@@ -22,7 +22,7 @@ const QuizGenerator = () => {
   const [score, setScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
 
-  //  This remembers the user's exact answers for the review screen!
+  // This remembers the user's exact answers for the review screen!
   const [userAnswers, setUserAnswers] = useState([]);
 
   const handleFileUpload = async (event) => {
@@ -68,27 +68,38 @@ const QuizGenerator = () => {
     setUserAnswers([]);
 
     try {
+      // Grab the token from storage
+      const token = localStorage.getItem('token');
+
       const response = await fetch("http://127.0.0.1:8000/api/generate-quiz/", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Token ${token}` // Show the badge!
+        },
         body: JSON.stringify({ text: inputText }),
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        setQuizData(data.quiz);
-      } else {
-        alert("Error: " + data.error);
+      // The FIX: Read Django's specific error message (like the Quota limit)
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert(errorData.error || "Failed to generate quiz.");
+        setIsLoading(false);
+        return; // Stop the function
       }
+
+      const data = await response.json();
+      setQuizData(data.quiz);
+
     } catch (error) {
-      alert("Failed to connect to server.");
+      console.error("Error:", error);
+      alert("Failed to connect to server. Is Django running?");
     } finally {
       setIsLoading(false);
     }
   };
 
-  //  Now saves the final score to Django when the quiz ends!
+  // Now saves the final score to Django when the quiz ends!
   const handleAnswerClick = async (selectedOption) => {
     const isCorrect = selectedOption === quizData[currentQuestion].answer;
 
@@ -117,9 +128,14 @@ const QuizGenerator = () => {
 
       // The quiz is over! Send the final score to Django instantly!
       try {
+        const token = localStorage.getItem('token'); // Get token for saving score
+        
         await fetch("http://127.0.0.1:8000/api/save-score/", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Token ${token}` // Show the badge here too!
+          },
           body: JSON.stringify({
             score: newScore,
             total: quizData.length,
@@ -238,7 +254,7 @@ const QuizGenerator = () => {
 
             <div className="flex-1 p-6 md:p-8 overflow-y-auto bg-slate-50/30">
               {isLoading ? (
-                // Loading State
+                
                 <div className="flex flex-col items-center justify-center h-full text-purple-400">
                   <div className="relative">
                     <BrainCircuit
@@ -255,9 +271,9 @@ const QuizGenerator = () => {
                   </p>
                 </div>
               ) : showResults ? (
-                //  Final Score Screen WITH Detailed Review
+                
                 <div className="flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-500 pb-8">
-                  {/* The Big Score */}
+                  
                   <div className="w-20 h-20 bg-green-100 text-green-500 rounded-full flex items-center justify-center mb-4 shadow-inner">
                     <Trophy size={40} />
                   </div>
@@ -337,7 +353,7 @@ const QuizGenerator = () => {
                   </button>
                 </div>
               ) : quizData.length > 0 ? (
-                // Active Question Screen
+                
                 <div className="w-full max-w-xl mx-auto h-full flex flex-col justify-center animate-in slide-in-from-right-8 fade-in duration-300">
                   <h3 className="text-2xl font-bold text-slate-800 mb-8 leading-relaxed">
                     {quizData[currentQuestion].question}
@@ -361,7 +377,7 @@ const QuizGenerator = () => {
                   </div>
                 </div>
               ) : (
-                // Empty State
+                
                 <div className="flex flex-col items-center justify-center h-full text-center">
                   <div className="w-32 h-32 bg-slate-50 rounded-full flex items-center justify-center mb-6 border-4 border-white shadow-sm">
                     <BrainCircuit size={48} className="text-slate-300" />

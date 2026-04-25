@@ -9,8 +9,7 @@ const FlashcardsPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [flippedCards, setFlippedCards] = useState([]); // Keeps track of which cards are flipped
 
-
-  //  Function to handle file uploads
+  // Function to handle file uploads
   // This function takes the selected file and sends it to your new Django extract-text API
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
@@ -44,7 +43,7 @@ const FlashcardsPage = () => {
       event.target.value = null;
     }
   };
-  //  END OF File Upload CODE
+  // END OF File Upload CODE
 
   // This function runs when you click "Generate"
   const handleGenerate = async () => {
@@ -55,36 +54,39 @@ const FlashcardsPage = () => {
     setFlippedCards([]); // Reset flipped state
 
     try {
+      const token = localStorage.getItem('token');
+
       // Send the text to my Django backend
       const response = await fetch('http://localhost:8000/api/generate-flashcards/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Token ${token}` // Show the badge to Django
         },
         body: JSON.stringify({ text: inputText }),
       });
 
+      // 👇 THE FIX: Read Django's specific error message instead of throwing a generic one
       if (!response.ok) {
-        throw new Error('Failed to generate flashcards');
+        const errorData = await response.json();
+        alert(errorData.error || 'Failed to generate flashcards.'); 
+        setIsLoading(false);
+        return; // Stop the function here
       }
 
       // Get the JSON array back from DJANGO/OpenAI
       const data = await response.json();
 
-      //Put the real AI flascards on the screen
+      // Put the real AI flashcards on the screen
       setFlashcards(data);
 
     } catch (error) {
       console.error("Error:", error);
-      alert("Backend error! Check your Django terminal to see what crashed.");
+      alert("Failed to connect to the server. Is Django running?");
     } finally {
       setIsLoading(false);
     }
-
   };
-
-
-
 
   // Function to flip a specific card
   const toggleCard = (index) => {
@@ -147,7 +149,7 @@ const FlashcardsPage = () => {
         </div>
       </div>
 
-      {/* Flashcards Display Section */}
+      
       {flashcards.length > 0 && (
         <div>
           <h2 className="text-xl font-bold mb-4">Your Revision Cards</h2>

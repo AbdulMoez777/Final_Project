@@ -109,7 +109,7 @@ const Dashboard = () => {
             icon={<Layers size={20} />}
             text="Flashcards"
           />
-          <SidebarItem icon={<UploadCloud size={20} />} text="My Files" />
+          
         </nav>
 
         <div className="p-4 border-t border-slate-100">
@@ -310,6 +310,7 @@ const GoalItem = ({ text, completed }) => (
 );
 
 const DynamicActivityItem = ({ activity }) => {
+  const navigate = useNavigate();
   let icon, bgClass, iconClass;
 
   if (activity.type === "Summary") {
@@ -327,7 +328,9 @@ const DynamicActivityItem = ({ activity }) => {
   }
 
   return (
-    <div className="flex items-center justify-between p-4 border border-slate-100 rounded-xl hover:border-blue-200 transition-colors bg-slate-50/50">
+    <div 
+    onClick={() => navigate(`/activity/${activity.id}`)}
+    className="cursor-pointer hover:shadow-md flex items-center justify-between p-4 border border-slate-100 rounded-xl hover:border-blue-200 transition-all bg-slate-50/50">
       <div className="flex items-center gap-4">
         <div
           className={`w-10 h-10 ${bgClass} ${iconClass} rounded-full flex items-center justify-center flex-shrink-0`}
@@ -337,7 +340,6 @@ const DynamicActivityItem = ({ activity }) => {
         <div>
           <div className="flex items-center gap-3">
             <h4 className="font-semibold text-slate-800">{activity.title}</h4>
-            {/* 👇 NEW: Shows the score if it exists! */}
             {activity.score !== null && activity.score !== undefined && (
               <span className="flex items-center gap-1 text-xs font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-md">
                 <CheckCircle size={12} /> {activity.score}/{activity.total}

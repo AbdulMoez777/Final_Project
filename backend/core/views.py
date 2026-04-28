@@ -17,11 +17,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.authtoken.models import Token
 
 # Gemini APi
-genai.configure(api_key="AIzaSyA_BHAvWeyDy5FgsXcovExxV5oEwXMwYwU")
+genai.configure(api_key="AIzaSyCZlulD72Cm69i4uMaqSN46WESwusCgCM0")
 
 print("Loading AI Model... please wait...")
-summarizer = pipeline("summarization", model="Falconsai/text_summarization")
-print("AI Model Ready!")
+
+
 
 @api_view(['POST'])
 def signup(request):
@@ -127,26 +127,48 @@ def manage_users(request, user_id=None):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def summarize_text(request):
-    try:
-        text_to_summarize = request.data.get('text')
-        
-        if not text_to_summarize:
-            return Response({'error': 'No text provided'}, status=status.HTTP_400_BAD_REQUEST)
+    text_to_summarize = request.data.get('text')
+    
+    if not text_to_summarize:
+        return Response({'error': 'No text provided'}, status=status.HTTP_400_BAD_REQUEST)
 
+    try:
+       
+        prompt = f"""
+        You are an expert tutor. Please provide a clear, concise, and highly educational summary of the following text.
+        Highlight the most important key concepts. Do not include markdown like ```json or greetings.
         
-        summary_result = summarizer(text_to_summarize, max_length=1000, min_length=30, do_sample=False)
+        Text to summarize: {text_to_summarize}
+        """
         
+       
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        response = model.generate_content(prompt)
+        summary_text = response.text.strip()
         
-        summary_text = summary_result[0]['summary_text']
         
         AIActivity.objects.create(
             user=request.user,
             activity_type="Summary",
             title="Document Summary",
-            file_name="Pasted Notes" 
+            file_name="Pasted Notes",
+            content=summary_text 
         )
 
         return Response({'summary': summary_text}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        error_message = str(e)
+        print("Summary Error:", error_message)
+        
+        # Catch the 60-second speed limit just like we did for the others!
+        if "429" in error_message or "Quota" in error_message:
+            return Response(
+                {'error': 'Whoa there! The AI is taking a quick breather. Please wait 60 seconds and try again.'}, 
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
+            
+        return Response({'error': 'Failed to generate summary. Please try again.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -191,7 +213,8 @@ def generate_flashcards(request):
             user=request.user,
             activity_type="Flashcards",
             title="Study Flashcards",
-            file_name="Pasted Notes" 
+            file_name="Pasted Notes",
+            content=json.dumps(flashcards)
         )
 
         return Response(flashcards, status=status.HTTP_200_OK)
@@ -303,6 +326,7 @@ def save_quiz_score(request):
         # Get the final score data from React
         final_score = request.data.get('score')
         total_q = request.data.get('total')
+        quiz_data = request.data.get('quiz_data')
         
         # Save it to the database!
         AIActivity.objects.create(
@@ -311,8 +335,30 @@ def save_quiz_score(request):
             title="Interactive AI Quiz",
             file_name="Completed Quiz",
             score=final_score,
-            total_questions=total_q
+            total_questions=total_q,
+            content=json.dumps(quiz_data) if quiz_data else None
         )
         return Response({'message': 'Score saved successfully!'}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    
+# Add to views.py
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_activity_detail(request, activity_id):
+    try:
+        # 1. Find the specific activity. 
+        # (user=request.user ensures they can't spy on other people's data!)
+        activity = AIActivity.objects.get(id=activity_id, user=request.user)
+        
+        return Response({
+            "id": activity.id,
+            "type": activity.activity_type,
+            "title": activity.title,
+            "content": activity.content, 
+            "time": activity.created_at.strftime("%b %d, %Y")
+        }, status=status.HTTP_200_OK)
+        
+    except AIActivity.DoesNotExist:
+        return Response({'error': 'Activity not found'}, status=status.HTTP_404_NOT_FOUND)

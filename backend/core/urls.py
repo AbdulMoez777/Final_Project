@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.urls import path
 from core.views import signup, login_view, summarize_text, manage_users, generate_quiz, generate_flashcards, extract_text_from_file, get_recent_activity, save_quiz_score
+from . import views
 
 
 urlpatterns = [
@@ -16,4 +17,5 @@ urlpatterns = [
     path('api/extract-text/', extract_text_from_file), # Extract text from PDF or PPTX
     path('api/recent-activity/', get_recent_activity, name='recent_activity'),
     path('api/save-score/', save_quiz_score, name='save_score'),
+    path('api/activity/<int:activity_id>/', views.get_activity_detail),
 ]

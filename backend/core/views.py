@@ -310,7 +310,8 @@ def get_recent_activity(request):
                 "quizzes_taken": total_quizzes,
                 "flashcards_reviewed": total_flashcards,
                 "files_uploaded": total_files
-            }
+            },
+            "username": request.user.username # 👈 THIS IS THE NEW LINE!
         }
             
         return Response(dashboard_data, status=status.HTTP_200_OK)
@@ -362,3 +363,20 @@ def get_activity_detail(request, activity_id):
         
     except AIActivity.DoesNotExist:
         return Response({'error': 'Activity not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+
+@api_view(['GET', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def user_profile(request):
+    if request.method == 'GET':
+        # Send profile info to React
+        return Response({
+            'email': request.user.email,
+            'date_joined': request.user.date_joined.strftime("%B %d, %Y")
+        }, status=status.HTTP_200_OK)
+        
+    elif request.method == 'DELETE':
+        # Delete the user from the database
+        user = request.user
+        user.delete()
+        return Response({'message': 'Account deleted successfully!'}, status=status.HTTP_200_OK)

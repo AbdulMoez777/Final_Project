@@ -11,11 +11,11 @@ urlpatterns = [
     path('api/summarize/', summarize_text), # <--- Add this line
     path('api/generate-quiz/', generate_quiz),
     path('api/generate-flashcards/', generate_flashcards),
-
     path('api/users/', manage_users),          # To Get List
     path('api/users/<int:user_id>/', manage_users), # To Delete specific user
     path('api/extract-text/', extract_text_from_file), # Extract text from PDF or PPTX
     path('api/recent-activity/', get_recent_activity, name='recent_activity'),
     path('api/save-score/', save_quiz_score, name='save_score'),
     path('api/activity/<int:activity_id>/', views.get_activity_detail),
+    path('api/profile/', views.user_profile),
 ]

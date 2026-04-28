@@ -9,6 +9,7 @@ import Summary from './pages/Summary';
 import QuizGenerator from './pages/QuizGenerator';
 import FlashcardsPage from './pages/FlashcardsPage';
 import ActivityViewer from './pages/ActivityViewer';
+import Settings from './pages/Settings';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
         <Route path="/quiz-generator" element={<QuizGenerator />} />
         <Route path="/flashcards" element={<FlashcardsPage />} />
         <Route path="/activity/:id" element={<ActivityViewer />} />
+        <Route path="/settings" element={<Settings />} />
       </Routes>
     </BrowserRouter>
   );

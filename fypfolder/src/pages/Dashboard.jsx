@@ -4,7 +4,6 @@ import {
   FileText,
   BrainCircuit,
   Layers,
-  UploadCloud,
   Settings,
   LogOut,
   Search,
@@ -19,8 +18,9 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   const [recentActivities, setRecentActivities] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [userName, setUserName] = useState("Student"); // State is ready!
 
-  // 👇 NEW: State to hold your actual database stats
   const [progressStats, setProgressStats] = useState({
     quizzes_taken: 0,
     flashcards_reviewed: 0,
@@ -29,7 +29,6 @@ const Dashboard = () => {
 
   const [isLoadingActivities, setIsLoadingActivities] = useState(true);
 
-  // 👇 UPDATED: Fetches the new combined data structure from Django
   useEffect(() => {
     const fetchRecentActivity = async () => {
       try {
@@ -49,15 +48,20 @@ const Dashboard = () => {
               Authorization: `Token ${token}`,
               "Content-Type": "application/json",
             },
-          },
+          }
         );
 
         if (response.ok) {
           const data = await response.json();
           setRecentActivities(data.recent_activity);
           setProgressStats(data.progress_stats);
+          
+          // 👇 UPDATE 1: Save the username from Django!
+          if (data.username) {
+            setUserName(data.username); 
+          }
+          
         } else if (response.status === 401) {
-          // If Django says "Unauthorized" (maybe the token expired)
           localStorage.removeItem("token");
           navigate("/login");
         } else {
@@ -71,12 +75,21 @@ const Dashboard = () => {
     };
 
     fetchRecentActivity();
-  }, []);
+  }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/login");
   };
+
+  const filteredActivities = recentActivities.filter((activity) => {
+    const searchLower = searchQuery.toLowerCase();
+    return (
+      activity.title.toLowerCase().includes(searchLower) ||
+      activity.file.toLowerCase().includes(searchLower) ||
+      activity.type.toLowerCase().includes(searchLower)
+    );
+  });
 
   return (
     <div className="flex h-screen bg-slate-50 font-sans">
@@ -109,11 +122,10 @@ const Dashboard = () => {
             icon={<Layers size={20} />}
             text="Flashcards"
           />
-          
         </nav>
 
         <div className="p-4 border-t border-slate-100">
-          <SidebarItem icon={<Settings size={20} />} text="Settings" />
+          <SidebarItem onClick={() => navigate('/settings')} icon={<Settings size={20} />} text="Settings" />
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl w-full transition-colors font-medium"
@@ -138,16 +150,15 @@ const Dashboard = () => {
               />
               <input
                 type="text"
-                placeholder="Search summaries..."
+                placeholder="Search activity..."
+                value={searchQuery} 
+                onChange={(e) => setSearchQuery(e.target.value)} 
                 className="pl-10 pr-4 py-2 bg-slate-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 w-64"
               />
             </div>
-            <button className="relative text-slate-500 hover:text-blue-600">
-              <Bell size={24} />
-              <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-            </button>
-            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
-              AM
+           
+            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold uppercase">
+              {userName.charAt(0)}
             </div>
           </div>
         </header>
@@ -156,8 +167,9 @@ const Dashboard = () => {
         <div className="flex-1 overflow-y-auto p-8">
           <div className="max-w-6xl mx-auto">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-slate-900">
-                Welcome back, Abdul Moez! 👋
+              {/* 👇 UPDATE 3: Dynamic Welcome Message */}
+              <h1 className="text-3xl font-bold text-slate-900 capitalize">
+                Welcome back, {userName.split('@')[0]}! 👋
               </h1>
               <p className="text-slate-500 mt-1">
                 Ready to generate some new study materials today?
@@ -195,7 +207,6 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Left Column: Stats & Goals */}
               <div className="space-y-8">
-                {/* 👇 UPDATED: Stats Row now uses Real Data */}
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                   <h3 className="font-bold text-slate-800 mb-4">
                     Your Progress
@@ -238,8 +249,8 @@ const Dashboard = () => {
                       <Loader2 className="animate-spin mb-2" size={32} />
                       <p>Loading your history...</p>
                     </div>
-                  ) : recentActivities.length > 0 ? (
-                    recentActivities.map((activity) => (
+                  ) : filteredActivities.length > 0 ? (
+                    filteredActivities.map((activity) => (
                       <DynamicActivityItem
                         key={activity.id}
                         activity={activity}
@@ -248,8 +259,9 @@ const Dashboard = () => {
                   ) : (
                     <div className="text-center py-10 text-slate-500">
                       <p>
-                        No recent activity found. Generate a quiz or summary to
-                        get started!
+                        {searchQuery 
+                          ? `No results found for "${searchQuery}"` 
+                          : "No recent activity found. Generate a quiz or summary to get started!"}
                       </p>
                     </div>
                   )}
@@ -328,9 +340,10 @@ const DynamicActivityItem = ({ activity }) => {
   }
 
   return (
-    <div 
-    onClick={() => navigate(`/activity/${activity.id}`)}
-    className="cursor-pointer hover:shadow-md flex items-center justify-between p-4 border border-slate-100 rounded-xl hover:border-blue-200 transition-all bg-slate-50/50">
+    <div
+      onClick={() => navigate(`/activity/${activity.id}`)}
+      className="cursor-pointer hover:shadow-md flex items-center justify-between p-4 border border-slate-100 rounded-xl hover:border-blue-200 transition-all bg-slate-50/50"
+    >
       <div className="flex items-center gap-4">
         <div
           className={`w-10 h-10 ${bgClass} ${iconClass} rounded-full flex items-center justify-center flex-shrink-0`}
@@ -362,4 +375,4 @@ const DynamicActivityItem = ({ activity }) => {
   );
 };
 
-export default Dashboard;
+export default Dashboard;   

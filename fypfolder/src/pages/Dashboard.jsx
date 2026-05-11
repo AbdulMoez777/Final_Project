@@ -19,7 +19,12 @@ const Dashboard = () => {
 
   const [recentActivities, setRecentActivities] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [userName, setUserName] = useState("Student"); // State is ready!
+  const [userName, setUserName] = useState("Student"); 
+  
+  // 👇 ADDED: State for the Avatar Image
+  const [userAvatar, setUserAvatar] = useState(null);
+  
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   const [progressStats, setProgressStats] = useState({
     quizzes_taken: 0,
@@ -56,9 +61,12 @@ const Dashboard = () => {
           setRecentActivities(data.recent_activity);
           setProgressStats(data.progress_stats);
           
-          // 👇 UPDATE 1: Save the username from Django!
           if (data.username) {
             setUserName(data.username); 
+          }
+          // 👇 ADDED: Catch the avatar from Django
+          if (data.avatar) {
+            setUserAvatar(data.avatar);
           }
           
         } else if (response.status === 401) {
@@ -156,9 +164,65 @@ const Dashboard = () => {
                 className="pl-10 pr-4 py-2 bg-slate-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 w-64"
               />
             </div>
-           
-            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold uppercase">
-              {userName.charAt(0)}
+            
+            {/* Interactive Profile Dropdown Menu */}
+            <div className="relative">
+              <button 
+                onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold uppercase hover:ring-2 hover:ring-blue-300 transition-all focus:outline-none overflow-hidden"
+              >
+                {/* 👇 UPDATED: Show Image if it exists, otherwise show letter */}
+                {userAvatar ? (
+                   <img src={userAvatar} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                   userName.charAt(0)
+                )}
+              </button>
+
+              {isProfileMenuOpen && (
+                <div className="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50">
+                  
+                  {/* Header: User Info */}
+                  <div className="px-4 py-3 border-b border-slate-100">
+                    <p className="text-sm font-bold text-slate-800 capitalize">
+                      {userName.split('@')[0]}
+                    </p>
+                    <p className="text-xs text-slate-500 truncate mt-0.5">
+                      {userName.includes('@') ? userName : `${userName}@student.edu`}
+                    </p>
+                  </div>
+                  
+                  {/* Middle: Navigation Links */}
+                  <div className="py-2">
+                    <button 
+                      onClick={() => {
+                        setIsProfileMenuOpen(false); 
+                        navigate('/settings');       
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-3 transition-colors"
+                    >
+                      <Settings size={16} className="text-slate-400" /> Account Settings
+                    </button>
+                    
+                    <div className="px-4 py-2 text-left text-sm text-slate-700 flex items-center gap-3">
+                      <span className="w-4 flex justify-center text-slate-400">👑</span>
+                      <span className="flex-1">Current Plan</span>
+                      <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">Free</span>
+                    </div>
+                  </div>
+                  
+                  {/* Bottom: Danger/Logout Zone */}
+                  <div className="border-t border-slate-100 pt-2">
+                    <button 
+                      onClick={handleLogout}
+                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 font-medium transition-colors"
+                    >
+                      <LogOut size={16} /> Log Out
+                    </button>
+                  </div>
+
+                </div>
+              )}
             </div>
           </div>
         </header>
@@ -167,7 +231,6 @@ const Dashboard = () => {
         <div className="flex-1 overflow-y-auto p-8">
           <div className="max-w-6xl mx-auto">
             <div className="mb-8">
-              {/* 👇 UPDATE 3: Dynamic Welcome Message */}
               <h1 className="text-3xl font-bold text-slate-900 capitalize">
                 Welcome back, {userName.split('@')[0]}! 👋
               </h1>
@@ -375,4 +438,4 @@ const DynamicActivityItem = ({ activity }) => {
   );
 };
 
-export default Dashboard;   
+export default Dashboard;

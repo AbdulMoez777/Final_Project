@@ -11,10 +11,12 @@ from rest_framework.decorators import parser_classes
 import PyPDF2
 from pptx import Presentation
 import requests
-from .models import AIActivity
+from .models import AIActivity, UserProfile
 from rest_framework.decorators import permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authtoken.models import Token
+from rest_framework.parsers import MultiPartParser, JSONParser
+from rest_framework.decorators import parser_classes
 
 # Gemini APi
 genai.configure(api_key="AIzaSyCZlulD72Cm69i4uMaqSN46WESwusCgCM0")
@@ -280,7 +282,6 @@ def extract_text_from_file(request):
 @permission_classes([IsAuthenticated])
 def get_recent_activity(request):
     try:
-        
         activities = AIActivity.objects.filter(user=request.user).order_by('-created_at')[:5]
         
         recent_list = []
@@ -295,13 +296,16 @@ def get_recent_activity(request):
                 "total": act.total_questions
             })
             
-        #  Calculate dynamic stats for "Your Progress"
         total_quizzes = AIActivity.objects.filter(user=request.user, activity_type="Quiz").count()
         total_flashcards = AIActivity.objects.filter(user=request.user, activity_type="Flashcards").count()
-        
-        
-        # Count unique files uploaded by looking at the file_names (excluding 'Pasted Notes')
         total_files = AIActivity.objects.filter(user=request.user).exclude(file_name="Pasted Notes").values('file_name').distinct().count()
+
+        # 👇 1. Grab the user's profile to get the picture URL
+        from .models import UserProfile
+        profile_obj = UserProfile.objects.filter(user=request.user).first()
+        avatar_url = None
+        if profile_obj and profile_obj.profile_picture:
+            avatar_url = request.build_absolute_uri(profile_obj.profile_picture.url)
 
         # Send EVERYTHING back to React in one package
         dashboard_data = {
@@ -311,12 +315,13 @@ def get_recent_activity(request):
                 "flashcards_reviewed": total_flashcards,
                 "files_uploaded": total_files
             },
-            "username": request.user.username # 👈 THIS IS THE NEW LINE!
+            "username": request.user.first_name if request.user.first_name else request.user.username,
+            "avatar": avatar_url # 👇 2. Send the picture URL to the Dashboard!
         }
             
         return Response(dashboard_data, status=status.HTTP_200_OK)
         
-    except Exception as e:
+    except Exception as e: 
         print("Activity Fetch Error:", str(e))
         return Response({'error': 'Failed to fetch activity'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -365,18 +370,50 @@ def get_activity_detail(request, activity_id):
         return Response({'error': 'Activity not found'}, status=status.HTTP_404_NOT_FOUND)
     
 
-@api_view(['GET', 'DELETE'])
+
+@api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, JSONParser]) # Tells Django it is allowed to read Files AND Text
 def user_profile(request):
+    # Safely get or create the connected profile table
+    profile_obj, created = UserProfile.objects.get_or_create(user=request.user)
+
     if request.method == 'GET':
-        # Send profile info to React
+        display_name = request.user.first_name if request.user.first_name else request.user.username.split('@')[0]
+        
+        avatar_url = None
+        if profile_obj.profile_picture:
+            avatar_url = request.build_absolute_uri(profile_obj.profile_picture.url)
+            
         return Response({
             'email': request.user.email,
+            'name': display_name,
+            'avatar': avatar_url, 
             'date_joined': request.user.date_joined.strftime("%B %d, %Y")
         }, status=status.HTTP_200_OK)
         
+    elif request.method == 'PUT':
+        updated = False
+        
+        # 1. Did they send a new name?
+        new_name = request.data.get('name')
+        if new_name:
+            request.user.first_name = new_name
+            request.user.save()
+            updated = True
+            
+        # 2. Did they send a profile picture?
+        if 'profile_picture' in request.FILES:
+            profile_obj.profile_picture = request.FILES['profile_picture']
+            profile_obj.save()
+            updated = True
+
+        # 3. If they updated AT LEAST one of them, return success!
+        if updated:
+            return Response({'message': 'Profile updated successfully!'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'No data provided to update.'}, status=status.HTTP_400_BAD_REQUEST)
+        
     elif request.method == 'DELETE':
-        # Delete the user from the database
-        user = request.user
-        user.delete()
+        request.user.delete()
         return Response({'message': 'Account deleted successfully!'}, status=status.HTTP_200_OK)

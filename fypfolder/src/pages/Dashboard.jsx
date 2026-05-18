@@ -11,6 +11,7 @@ import {
   Zap,
   Loader2,
   CheckCircle,
+  Trash2, // 👈 ADDED for deleting goals
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -21,18 +22,22 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [userName, setUserName] = useState("Student"); 
   
-  // 👇 ADDED: State for the Avatar Image
   const [userAvatar, setUserAvatar] = useState(null);
   
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   const [progressStats, setProgressStats] = useState({
+    summaries_generated: 0,
     quizzes_taken: 0,
     flashcards_reviewed: 0,
     files_uploaded: 0,
   });
 
   const [isLoadingActivities, setIsLoadingActivities] = useState(true);
+
+  // States for Daily Goals
+  const [goals, setGoals] = useState([]);
+  const [newGoalText, setNewGoalText] = useState("");
 
   useEffect(() => {
     const fetchRecentActivity = async () => {
@@ -64,7 +69,6 @@ const Dashboard = () => {
           if (data.username) {
             setUserName(data.username); 
           }
-          // 👇 ADDED: Catch the avatar from Django
           if (data.avatar) {
             setUserAvatar(data.avatar);
           }
@@ -82,8 +86,65 @@ const Dashboard = () => {
       }
     };
 
+    // 👇 ADDED: Fetch the user's goals from the database
+    const fetchGoals = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      try {
+        const res = await fetch("http://127.0.0.1:8000/api/goals/", {
+          headers: { Authorization: `Token ${token}` },
+        });
+        if (res.ok) setGoals(await res.json());
+      } catch (err) { console.error("Error fetching goals", err); }
+    };
+
     fetchRecentActivity();
+    fetchGoals();
   }, [navigate]);
+
+  // 👇 ADDED: Handlers for Daily Goals
+  const handleAddGoal = async (e) => {
+    e.preventDefault();
+    if (!newGoalText.trim()) return;
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://127.0.0.1:8000/api/goals/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Token ${token}` },
+        body: JSON.stringify({ text: newGoalText }),
+      });
+      if (res.ok) {
+        const newGoal = await res.json();
+        setGoals([newGoal, ...goals]);
+        setNewGoalText("");
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  const handleToggleGoal = async (id) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://127.0.0.1:8000/api/goals/${id}/`, {
+        method: "PUT",
+        headers: { Authorization: `Token ${token}` },
+      });
+      if (res.ok) {
+        const updatedGoal = await res.json();
+        setGoals(goals.map(g => g.id === id ? updatedGoal : g).sort((a, b) => a.completed - b.completed));
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  const handleDeleteGoal = async (id) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://127.0.0.1:8000/api/goals/${id}/`, {
+        method: "DELETE",
+        headers: { Authorization: `Token ${token}` },
+      });
+      if (res.ok) setGoals(goals.filter(g => g.id !== id));
+    } catch (err) { console.error(err); }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -171,7 +232,6 @@ const Dashboard = () => {
                 onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                 className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold uppercase hover:ring-2 hover:ring-blue-300 transition-all focus:outline-none overflow-hidden"
               >
-                {/* 👇 UPDATED: Show Image if it exists, otherwise show letter */}
                 {userAvatar ? (
                    <img src={userAvatar} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
@@ -280,6 +340,10 @@ const Dashboard = () => {
                       value={progressStats.files_uploaded}
                     />
                     <StatRow
+                      label="Summaries Generated"
+                      value={progressStats.summaries_generated}
+                    />
+                    <StatRow
                       label="Quizzes Taken"
                       value={progressStats.quizzes_taken}
                     />
@@ -290,13 +354,49 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                {/* 👇 UPDATED: Dynamic Daily Goals Card */}
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-[300px]">
                   <h3 className="font-bold text-slate-800 mb-4">Daily Goals</h3>
-                  <div className="space-y-3">
-                    <GoalItem text="Summarize Physics Ch.1" completed />
-                    <GoalItem text="Take React Quiz" />
-                    <GoalItem text="Upload History PDF" />
+                  
+                  {/* Scrollable list of goals */}
+                  <div className="flex-1 overflow-y-auto space-y-2 mb-4 pr-2">
+                    {goals.length === 0 ? (
+                      <p className="text-sm text-slate-400 italic text-center mt-4">No goals yet. Add one below!</p>
+                    ) : (
+                      goals.map(goal => (
+                        <div key={goal.id} className="flex items-center justify-between group">
+                          <button 
+                            onClick={() => handleToggleGoal(goal.id)}
+                            className="flex items-center gap-3 text-left flex-1"
+                          >
+                            <div className={`w-5 h-5 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${goal.completed ? "bg-blue-600 border-blue-600" : "border-slate-300 hover:border-blue-400"}`}>
+                              {goal.completed && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                            </div>
+                            <span className={`text-sm truncate transition-all ${goal.completed ? "text-slate-400 line-through" : "text-slate-700"}`}>
+                              {goal.text}
+                            </span>
+                          </button>
+                          <button onClick={() => handleDeleteGoal(goal.id)} className="text-red-400 opacity-0 group-hover:opacity-100 hover:text-red-600 transition-opacity p-1">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      ))
+                    )}
                   </div>
+
+                  {/* Add new goal input */}
+                  <form onSubmit={handleAddGoal} className="mt-auto relative">
+                    <input 
+                      type="text" 
+                      placeholder="Add a new goal..." 
+                      value={newGoalText}
+                      onChange={(e) => setNewGoalText(e.target.value)}
+                      className="w-full text-sm bg-slate-50 border border-slate-200 rounded-lg pl-3 pr-10 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                    />
+                    <button type="submit" disabled={!newGoalText.trim()} className="absolute right-2 top-1.5 text-blue-600 hover:text-blue-800 disabled:text-slate-300 disabled:cursor-not-allowed transition-colors p-1">
+                      <CheckCircle size={16} />
+                    </button>
+                  </form>
                 </div>
               </div>
 
@@ -366,21 +466,6 @@ const StatRow = ({ label, value }) => (
   <div className="flex justify-between items-center py-2 border-b border-slate-50 last:border-0">
     <span className="text-slate-500 font-medium">{label}</span>
     <span className="text-slate-900 font-bold">{value}</span>
-  </div>
-);
-
-const GoalItem = ({ text, completed }) => (
-  <div className="flex items-center gap-3">
-    <div
-      className={`w-5 h-5 rounded border flex items-center justify-center ${completed ? "bg-blue-600 border-blue-600" : "border-slate-300"}`}
-    >
-      {completed && <div className="w-2 h-2 bg-white rounded-full"></div>}
-    </div>
-    <span
-      className={`text-sm ${completed ? "text-slate-400 line-through" : "text-slate-700"}`}
-    >
-      {text}
-    </span>
   </div>
 );
 

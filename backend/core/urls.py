@@ -20,6 +20,8 @@ urlpatterns = [
     path('api/recent-activity/', get_recent_activity, name='recent_activity'),
     path('api/save-score/', save_quiz_score, name='save_score'),
     path('api/activity/<int:activity_id>/', views.get_activity_detail),
+    path('api/goals/', views.manage_goals),             
+    path('api/goals/<int:goal_id>/', views.manage_goals), 
     path('api/profile/', views.user_profile),
 ]
 

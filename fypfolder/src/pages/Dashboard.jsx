@@ -11,7 +11,7 @@ import {
   Zap,
   Loader2,
   CheckCircle,
-  Trash2, // 👈 ADDED for deleting goals
+  Trash2, 
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -35,7 +35,7 @@ const Dashboard = () => {
 
   const [isLoadingActivities, setIsLoadingActivities] = useState(true);
 
-  // States for Daily Goals
+  
   const [goals, setGoals] = useState([]);
   const [newGoalText, setNewGoalText] = useState("");
 
@@ -86,7 +86,7 @@ const Dashboard = () => {
       }
     };
 
-    // 👇 ADDED: Fetch the user's goals from the database
+    
     const fetchGoals = async () => {
       const token = localStorage.getItem("token");
       if (!token) return;
@@ -102,7 +102,7 @@ const Dashboard = () => {
     fetchGoals();
   }, [navigate]);
 
-  // 👇 ADDED: Handlers for Daily Goals
+  
   const handleAddGoal = async (e) => {
     e.preventDefault();
     if (!newGoalText.trim()) return;
@@ -354,11 +354,11 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                {/* 👇 UPDATED: Dynamic Daily Goals Card */}
+                
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-[300px]">
                   <h3 className="font-bold text-slate-800 mb-4">Daily Goals</h3>
                   
-                  {/* Scrollable list of goals */}
+                  
                   <div className="flex-1 overflow-y-auto space-y-2 mb-4 pr-2">
                     {goals.length === 0 ? (
                       <p className="text-sm text-slate-400 italic text-center mt-4">No goals yet. Add one below!</p>
@@ -384,7 +384,7 @@ const Dashboard = () => {
                     )}
                   </div>
 
-                  {/* Add new goal input */}
+                  
                   <form onSubmit={handleAddGoal} className="mt-auto relative">
                     <input 
                       type="text" 
@@ -400,7 +400,7 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* Right Column: Recent Activity */}
+              
               <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                 <h3 className="font-bold text-slate-800 mb-4">
                   Recent AI Activity

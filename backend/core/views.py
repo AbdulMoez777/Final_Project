@@ -118,7 +118,7 @@ def generate_quiz(request):
             messages=[
                 {
                     "role": "system", 
-                    "content": "You are a quiz generator. Generate a multiple-choice quiz based on the provided text. Return ONLY a valid JSON object matching this exact format: {\"quiz_array\": [{\"question\": \"Sample Question?\", \"options\": [\"A) First option\", \"B) Second option\", \"C) Third option\", \"D) Fourth option\"], \"answer\": \"A) First option\"}]}. The 'answer' field MUST exactly match the full text of the correct option, not just the letter. Do not use markdown blocks."
+                    "content": "You are a quiz generator. Generate exactly 10 multiple-choice questions based on the provided text. Return ONLY a valid JSON object matching this exact format: {\"quiz_array\": [{\"question\": \"Sample Question?\", \"options\": [\"A) First option\", \"B) Second option\", \"C) Third option\", \"D) Fourth option\"], \"answer\": \"A) First option\"}]}. The 'answer' field MUST exactly match the full text of the correct option, not just the letter. Do not use markdown blocks."
                 },
                 {"role": "user", "content": text}
             ]
@@ -353,7 +353,7 @@ def user_profile(request):
         request.user.delete()
         return Response({'message': 'Account deleted successfully!'}, status=status.HTTP_200_OK)
 
-# 👇 ADD THIS TO THE VERY BOTTOM OF views.py 👇
+
 @api_view(['GET', 'POST', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def manage_goals(request, goal_id=None):

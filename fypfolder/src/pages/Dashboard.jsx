@@ -11,7 +11,10 @@ import {
   Zap,
   Loader2,
   CheckCircle,
-  Trash2, 
+  Trash2,
+  MessageCircle,
+  X,
+  Send,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -20,10 +23,10 @@ const Dashboard = () => {
 
   const [recentActivities, setRecentActivities] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [userName, setUserName] = useState("Student"); 
-  
+  const [userName, setUserName] = useState("Student");
+
   const [userAvatar, setUserAvatar] = useState(null);
-  
+
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   const [progressStats, setProgressStats] = useState({
@@ -35,9 +38,18 @@ const Dashboard = () => {
 
   const [isLoadingActivities, setIsLoadingActivities] = useState(true);
 
-  
   const [goals, setGoals] = useState([]);
   const [newGoalText, setNewGoalText] = useState("");
+
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatInput, setChatInput] = useState("");
+  const [chatHistory, setChatHistory] = useState([
+    {
+      sender: "ai",
+      text: "Hi! I am your AI assistant. Ask me any quick question!",
+    },
+  ]);
+  const [isChatLoading, setIsChatLoading] = useState(false);
 
   useEffect(() => {
     const fetchRecentActivity = async () => {
@@ -58,21 +70,20 @@ const Dashboard = () => {
               Authorization: `Token ${token}`,
               "Content-Type": "application/json",
             },
-          }
+          },
         );
 
         if (response.ok) {
           const data = await response.json();
           setRecentActivities(data.recent_activity);
           setProgressStats(data.progress_stats);
-          
+
           if (data.username) {
-            setUserName(data.username); 
+            setUserName(data.username);
           }
           if (data.avatar) {
             setUserAvatar(data.avatar);
           }
-          
         } else if (response.status === 401) {
           localStorage.removeItem("token");
           navigate("/login");
@@ -86,7 +97,6 @@ const Dashboard = () => {
       }
     };
 
-    
     const fetchGoals = async () => {
       const token = localStorage.getItem("token");
       if (!token) return;
@@ -95,14 +105,15 @@ const Dashboard = () => {
           headers: { Authorization: `Token ${token}` },
         });
         if (res.ok) setGoals(await res.json());
-      } catch (err) { console.error("Error fetching goals", err); }
+      } catch (err) {
+        console.error("Error fetching goals", err);
+      }
     };
 
     fetchRecentActivity();
     fetchGoals();
   }, [navigate]);
 
-  
   const handleAddGoal = async (e) => {
     e.preventDefault();
     if (!newGoalText.trim()) return;
@@ -110,7 +121,10 @@ const Dashboard = () => {
       const token = localStorage.getItem("token");
       const res = await fetch("http://127.0.0.1:8000/api/goals/", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Token ${token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Token ${token}`,
+        },
         body: JSON.stringify({ text: newGoalText }),
       });
       if (res.ok) {
@@ -118,7 +132,9 @@ const Dashboard = () => {
         setGoals([newGoal, ...goals]);
         setNewGoalText("");
       }
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleToggleGoal = async (id) => {
@@ -130,9 +146,15 @@ const Dashboard = () => {
       });
       if (res.ok) {
         const updatedGoal = await res.json();
-        setGoals(goals.map(g => g.id === id ? updatedGoal : g).sort((a, b) => a.completed - b.completed));
+        setGoals(
+          goals
+            .map((g) => (g.id === id ? updatedGoal : g))
+            .sort((a, b) => a.completed - b.completed),
+        );
       }
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleDeleteGoal = async (id) => {
@@ -142,8 +164,10 @@ const Dashboard = () => {
         method: "DELETE",
         headers: { Authorization: `Token ${token}` },
       });
-      if (res.ok) setGoals(goals.filter(g => g.id !== id));
-    } catch (err) { console.error(err); }
+      if (res.ok) setGoals(goals.filter((g) => g.id !== id));
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleLogout = () => {
@@ -159,6 +183,37 @@ const Dashboard = () => {
       activity.type.toLowerCase().includes(searchLower)
     );
   });
+
+  const handleSendChat = async (e) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+
+    const userMsg = chatInput;
+    setChatHistory([...chatHistory, { sender: "user", text: userMsg }]);
+    setChatInput("");
+    setIsChatLoading(true);
+
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://127.0.0.1:8000/api/chat/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Token ${token}`,
+        },
+        body: JSON.stringify({ message: userMsg }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setChatHistory((prev) => [...prev, { sender: "ai", text: data.reply }]);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
 
   return (
     <div className="flex h-screen bg-slate-50 font-sans">
@@ -194,7 +249,11 @@ const Dashboard = () => {
         </nav>
 
         <div className="p-4 border-t border-slate-100">
-          <SidebarItem onClick={() => navigate('/settings')} icon={<Settings size={20} />} text="Settings" />
+          <SidebarItem
+            onClick={() => navigate("/settings")}
+            icon={<Settings size={20} />}
+            text="Settings"
+          />
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl w-full transition-colors font-medium"
@@ -220,67 +279,76 @@ const Dashboard = () => {
               <input
                 type="text"
                 placeholder="Search activity..."
-                value={searchQuery} 
-                onChange={(e) => setSearchQuery(e.target.value)} 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 pr-4 py-2 bg-slate-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 w-64"
               />
             </div>
-            
+
             {/* Interactive Profile Dropdown Menu */}
             <div className="relative">
-              <button 
+              <button
                 onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                 className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold uppercase hover:ring-2 hover:ring-blue-300 transition-all focus:outline-none overflow-hidden"
               >
                 {userAvatar ? (
-                   <img src={userAvatar} alt="Profile" className="w-full h-full object-cover" />
+                  <img
+                    src={userAvatar}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
-                   userName.charAt(0)
+                  userName.charAt(0)
                 )}
               </button>
 
               {isProfileMenuOpen && (
                 <div className="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50">
-                  
                   {/* Header: User Info */}
                   <div className="px-4 py-3 border-b border-slate-100">
                     <p className="text-sm font-bold text-slate-800 capitalize">
-                      {userName.split('@')[0]}
+                      {userName.split("@")[0]}
                     </p>
                     <p className="text-xs text-slate-500 truncate mt-0.5">
-                      {userName.includes('@') ? userName : `${userName}@student.edu`}
+                      {userName.includes("@")
+                        ? userName
+                        : `${userName}@student.edu`}
                     </p>
                   </div>
-                  
+
                   {/* Middle: Navigation Links */}
                   <div className="py-2">
-                    <button 
+                    <button
                       onClick={() => {
-                        setIsProfileMenuOpen(false); 
-                        navigate('/settings');       
+                        setIsProfileMenuOpen(false);
+                        navigate("/settings");
                       }}
                       className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-3 transition-colors"
                     >
-                      <Settings size={16} className="text-slate-400" /> Account Settings
+                      <Settings size={16} className="text-slate-400" /> Account
+                      Settings
                     </button>
-                    
+
                     <div className="px-4 py-2 text-left text-sm text-slate-700 flex items-center gap-3">
-                      <span className="w-4 flex justify-center text-slate-400">👑</span>
+                      <span className="w-4 flex justify-center text-slate-400">
+                        👑
+                      </span>
                       <span className="flex-1">Current Plan</span>
-                      <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">Free</span>
+                      <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                        Free
+                      </span>
                     </div>
                   </div>
-                  
+
                   {/* Bottom: Danger/Logout Zone */}
                   <div className="border-t border-slate-100 pt-2">
-                    <button 
+                    <button
                       onClick={handleLogout}
                       className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 font-medium transition-colors"
                     >
                       <LogOut size={16} /> Log Out
                     </button>
                   </div>
-
                 </div>
               )}
             </div>
@@ -292,7 +360,7 @@ const Dashboard = () => {
           <div className="max-w-6xl mx-auto">
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-slate-900 capitalize">
-                Welcome back, {userName.split('@')[0]}! 👋
+                Welcome back, {userName.split("@")[0]}! 👋
               </h1>
               <p className="text-slate-500 mt-1">
                 Ready to generate some new study materials today?
@@ -354,29 +422,41 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-[300px]">
                   <h3 className="font-bold text-slate-800 mb-4">Daily Goals</h3>
-                  
-                  
+
                   <div className="flex-1 overflow-y-auto space-y-2 mb-4 pr-2">
                     {goals.length === 0 ? (
-                      <p className="text-sm text-slate-400 italic text-center mt-4">No goals yet. Add one below!</p>
+                      <p className="text-sm text-slate-400 italic text-center mt-4">
+                        No goals yet. Add one below!
+                      </p>
                     ) : (
-                      goals.map(goal => (
-                        <div key={goal.id} className="flex items-center justify-between group">
-                          <button 
+                      goals.map((goal) => (
+                        <div
+                          key={goal.id}
+                          className="flex items-center justify-between group"
+                        >
+                          <button
                             onClick={() => handleToggleGoal(goal.id)}
                             className="flex items-center gap-3 text-left flex-1"
                           >
-                            <div className={`w-5 h-5 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${goal.completed ? "bg-blue-600 border-blue-600" : "border-slate-300 hover:border-blue-400"}`}>
-                              {goal.completed && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                            <div
+                              className={`w-5 h-5 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${goal.completed ? "bg-blue-600 border-blue-600" : "border-slate-300 hover:border-blue-400"}`}
+                            >
+                              {goal.completed && (
+                                <div className="w-2 h-2 bg-white rounded-full"></div>
+                              )}
                             </div>
-                            <span className={`text-sm truncate transition-all ${goal.completed ? "text-slate-400 line-through" : "text-slate-700"}`}>
+                            <span
+                              className={`text-sm truncate transition-all ${goal.completed ? "text-slate-400 line-through" : "text-slate-700"}`}
+                            >
                               {goal.text}
                             </span>
                           </button>
-                          <button onClick={() => handleDeleteGoal(goal.id)} className="text-red-400 opacity-0 group-hover:opacity-100 hover:text-red-600 transition-opacity p-1">
+                          <button
+                            onClick={() => handleDeleteGoal(goal.id)}
+                            className="text-red-400 opacity-0 group-hover:opacity-100 hover:text-red-600 transition-opacity p-1"
+                          >
                             <Trash2 size={14} />
                           </button>
                         </div>
@@ -384,23 +464,25 @@ const Dashboard = () => {
                     )}
                   </div>
 
-                  
                   <form onSubmit={handleAddGoal} className="mt-auto relative">
-                    <input 
-                      type="text" 
-                      placeholder="Add a new goal..." 
+                    <input
+                      type="text"
+                      placeholder="Add a new goal..."
                       value={newGoalText}
                       onChange={(e) => setNewGoalText(e.target.value)}
                       className="w-full text-sm bg-slate-50 border border-slate-200 rounded-lg pl-3 pr-10 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                     />
-                    <button type="submit" disabled={!newGoalText.trim()} className="absolute right-2 top-1.5 text-blue-600 hover:text-blue-800 disabled:text-slate-300 disabled:cursor-not-allowed transition-colors p-1">
+                    <button
+                      type="submit"
+                      disabled={!newGoalText.trim()}
+                      className="absolute right-2 top-1.5 text-blue-600 hover:text-blue-800 disabled:text-slate-300 disabled:cursor-not-allowed transition-colors p-1"
+                    >
                       <CheckCircle size={16} />
                     </button>
                   </form>
                 </div>
               </div>
 
-              
               <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                 <h3 className="font-bold text-slate-800 mb-4">
                   Recent AI Activity
@@ -422,8 +504,8 @@ const Dashboard = () => {
                   ) : (
                     <div className="text-center py-10 text-slate-500">
                       <p>
-                        {searchQuery 
-                          ? `No results found for "${searchQuery}"` 
+                        {searchQuery
+                          ? `No results found for "${searchQuery}"`
                           : "No recent activity found. Generate a quiz or summary to get started!"}
                       </p>
                     </div>
@@ -433,6 +515,68 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* 👇 --- FLOATING CHAT WIDGET ADDED HERE --- 👇 */}
+        <div className="fixed bottom-8 right-8 z-50 flex flex-col items-end">
+          
+          {/* Chat Box (Shows when open) */}
+          {isChatOpen && (
+            <div className="bg-white w-80 md:w-96 rounded-2xl shadow-2xl border border-slate-200 mb-4 overflow-hidden flex flex-col h-[450px] transition-all">
+              {/* Header */}
+              <div className="bg-blue-600 px-4 py-3 flex justify-between items-center text-white">
+                <div className="flex items-center gap-2 font-bold">
+                  <BrainCircuit size={18} /> Quick Assistant
+                </div>
+                <button onClick={() => setIsChatOpen(false)} className="hover:text-blue-200 transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+              
+              {/* Message Area */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
+                {chatHistory.map((msg, idx) => (
+                  <div key={idx} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
+                    <div className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${msg.sender === "user" ? "bg-blue-600 text-white rounded-br-none" : "bg-white border border-slate-200 text-slate-700 rounded-bl-none shadow-sm"}`}>
+                      {msg.text}
+                    </div>
+                  </div>
+                ))}
+                {isChatLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-white border border-slate-200 text-slate-400 rounded-2xl rounded-bl-none px-4 py-2 shadow-sm flex items-center gap-2">
+                      <Loader2 size={14} className="animate-spin" /> Thinking...
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Input Box */}
+              <div className="p-3 border-t border-slate-100 bg-white">
+                <form onSubmit={handleSendChat} className="flex gap-2">
+                  <input 
+                    type="text" 
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    placeholder="Ask anything..." 
+                    className="flex-1 bg-slate-100 text-sm rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button type="submit" disabled={isChatLoading || !chatInput.trim()} className="bg-blue-600 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                    <Send size={16} className="-ml-0.5" />
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Circular Floating Toggle Button */}
+          <button 
+            onClick={() => setIsChatOpen(!isChatOpen)}
+            className={`w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-white transition-transform hover:scale-110 ${isChatOpen ? "bg-slate-800" : "bg-blue-600"}`}
+          >
+            {isChatOpen ? <X size={24} /> : <MessageCircle size={28} />}
+          </button>
+        </div>
+        {/*  END OF WIDGET */}
       </main>
     </div>
   );

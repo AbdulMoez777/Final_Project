@@ -1,5 +1,5 @@
 from rest_framework.decorators import api_view, permission_classes, parser_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.models import User
@@ -12,6 +12,8 @@ from openai import OpenAI
 import PyPDF2
 from pptx import Presentation
 from .models import AIActivity, UserProfile, DailyGoal
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 
 # Initialize the AI Client
 client = OpenAI(api_key=settings.OPENAI_API_KEY)
@@ -64,6 +66,50 @@ def manage_users(request, user_id=None):
             return Response({'message': 'User deleted successfully'}, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def google_login(request):
+    token = request.data.get('token') 
+    
+    if not token:
+        return Response({'error': 'No token provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        # Verify the token securely with Google
+        idinfo = id_token.verify_oauth2_token(
+            token, 
+            google_requests.Request(), 
+            '98535180949-jeip6rmteon6isj19a0hfleq2ncs7iv9.apps.googleusercontent.com' 
+        )
+
+        email = idinfo.get('email')
+        first_name = idinfo.get('given_name', '')
+        last_name = idinfo.get('family_name', '')
+        picture = idinfo.get('picture', '')
+
+        # Check if user exists, otherwise create a new account
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={
+                'username': email.split('@')[0], 
+                'first_name': first_name,
+                'last_name': last_name
+            }
+        )
+
+        # Generate the Token for React
+        auth_token, _ = Token.objects.get_or_create(user=user)
+
+        return Response({
+            'token': auth_token.key,
+            'email': user.email,
+            'name': user.first_name,
+            'avatar': picture
+        }, status=status.HTTP_200_OK)
+
+    except ValueError:
+        return Response({'error': 'Invalid Google token'}, status=status.HTTP_401_UNAUTHORIZED)
         
 
 @api_view(['POST'])
@@ -389,3 +435,38 @@ def manage_goals(request, goal_id=None):
             return Response({'message': 'Goal deleted'}, status=status.HTTP_200_OK)
         except DailyGoal.DoesNotExist:
             return Response({'error': 'Goal not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def quick_chat(request):
+    user_message = request.data.get('message', '')
+    
+    if not user_message:
+        return Response({'error': 'Message is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a helpful, concise AI study assistant. Provide short, accurate answers to the student's questions."},
+                {"role": "user", "content": user_message}
+            ]
+        )
+        
+        ai_reply = response.choices[0].message.content
+
+        # Optional: Save it to their activity history so it shows up on the dashboard!
+        AIActivity.objects.create(
+            user=request.user,
+            activity_type="Summary", # Using summary icon for chat
+            title="Quick Q&A",
+            file_name="General Chat",
+            content=ai_reply
+        )
+
+        return Response({'reply': ai_reply}, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        print("Chat Error:", str(e))
+        return Response({'error': 'AI failed to respond.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -11,6 +11,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/signup/', signup),
     path('api/login/', login_view), 
+    path('api/auth/google/', views.google_login),
     path('api/summarize/', summarize_text), 
     path('api/generate-quiz/', generate_quiz),
     path('api/generate-flashcards/', generate_flashcards),
@@ -22,6 +23,7 @@ urlpatterns = [
     path('api/activity/<int:activity_id>/', views.get_activity_detail),
     path('api/goals/', views.manage_goals),             
     path('api/goals/<int:goal_id>/', views.manage_goals), 
+    path('api/chat/', views.quick_chat),
     path('api/profile/', views.user_profile),
 ]
 

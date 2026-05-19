@@ -60,7 +60,7 @@ const Login = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          access_token: credentialResponse.credential, // The token from Google
+          token: credentialResponse.credential,// The token from Google
         }),
       });
 

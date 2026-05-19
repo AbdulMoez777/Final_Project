@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Keep this for button navigation
+import { useNavigate } from 'react-router-dom'; 
 import heropng from '../assets/Hero.png';
-import testinomialmoez from '../assets/testinomialmoez.png'; // <--- Add this
+import testinomialmoez from '../assets/testinomialmoez.jpeg'; 
+import testinomialibtihaj from '../assets/testinomialibtihaj.jpeg'; 
+import testinomialhassan from '../assets/testinomialhassan.jpeg'; 
+
 import { 
   BookOpen, 
   BrainCircuit, 
@@ -17,7 +20,7 @@ import {
 } from 'lucide-react';
 
 const LandingPage = () => {
-  const navigate = useNavigate(); // This tool allows us to switch pages
+  const navigate = useNavigate(); 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
 
@@ -45,7 +48,6 @@ const LandingPage = () => {
               <a href="#how-it-works" className="text-slate-600 hover:text-blue-600 font-medium">How It Works</a>
               <a href="#faq" className="text-slate-600 hover:text-blue-600 font-medium">FAQ</a>
               
-              {/* ✅ UPDATED: Working Login Button */}
               <button 
                 onClick={() => navigate('/login')} 
                 className="px-5 py-2 text-blue-600 font-semibold border border-blue-600 rounded-full hover:bg-blue-50 transition"
@@ -53,7 +55,6 @@ const LandingPage = () => {
                 Login
               </button>
               
-              {/* ✅ UPDATED: Working Sign Up Button */}
               <button 
                 onClick={() => navigate('/signup')} 
                 className="px-5 py-2 bg-blue-600 text-white font-semibold rounded-full hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition"
@@ -78,16 +79,12 @@ const LandingPage = () => {
             <a href="#how-it-works" className="block text-slate-600 font-medium">How It Works</a>
             <a href="#faq" className="block text-slate-600 font-medium">FAQ</a>
             <div className="flex flex-col gap-3 mt-4">
-              
-              {/* ✅ UPDATED: Mobile Login Button */}
               <button 
                 onClick={() => navigate('/login')}
                 className="w-full py-2 text-blue-600 font-semibold border border-blue-600 rounded-lg"
               >
                 Login
               </button>
-              
-              {/* ✅ UPDATED: Mobile Sign Up Button */}
               <button 
                 onClick={() => navigate('/signup')}
                 className="w-full py-2 bg-blue-600 text-white font-semibold rounded-lg"
@@ -118,15 +115,12 @@ const LandingPage = () => {
               Upload your PDFs, slides, or notes. Let our AI generate summaries, quizzes, and flashcards instantly. Save time and boost your grades.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              
-              {/* ✅ UPDATED: Hero CTA Button */}
               <button 
                 onClick={() => navigate('/signup')} 
                 className="px-8 py-3.5 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 shadow-xl shadow-blue-600/20 transition flex items-center justify-center gap-2"
               >
                 Get Started Free <ArrowRight size={20} />
               </button>
-              
               <button className="px-8 py-3.5 text-slate-700 font-bold bg-white border border-slate-200 rounded-full hover:bg-slate-50 transition">
                 View Demo
               </button>
@@ -144,12 +138,10 @@ const LandingPage = () => {
           {/* Hero Image / Graphic */}
           <div className="lg:w-1/2 relative">
             <div className="relative z-10 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 overflow-hidden transform rotate-2 hover:rotate-0 transition duration-500">
-               {/* Placeholder for the image from PDF */}
               <div className="bg-slate-100 rounded-xl h-64 md:h-96 w-full flex items-center justify-center">
                 <img src={heropng} alt="Study Dashboard" className='w-full h-full object-cover'/>
               </div>
             </div>
-            {/* Decorative blobs */}
             <div className="absolute top-10 -right-10 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
             <div className="absolute -bottom-10 -left-10 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
           </div>
@@ -167,7 +159,6 @@ const LandingPage = () => {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Feature Cards */}
             <FeatureCard 
               icon={<BookOpen size={24} className="text-blue-600" />} 
               title="Smart Summaries" 
@@ -231,25 +222,34 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* --- TESTIMONIALS --- */}
+      {/* --- TESTIMONIALS SECTION (UPDATED) --- */}
       <section className="py-20 bg-blue-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-slate-900 mb-12">What Students Say</h2>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-slate-900 mb-4">What Students Say</h2>
+            <p className="text-slate-600">Join thousands of students upgrading their study habits.</p>
+          </div>
           
-          <div className="bg-white p-8 rounded-2xl shadow-xl border border-blue-100">
-            <div className="flex justify-center mb-6">
-              <div className="w-16 h-16 bg-slate-200 rounded-full overflow-hidden">
-             {/* Use your new imported image variable here */}
-            <img src={testinomialmoez} alt="Abdul Moez" className="w-full h-full object-cover" />
-            </div>
-            </div>
-            <p className="text-xl text-slate-700 italic mb-6">
-              "The quizzes feel like real exam questions. It helped me prepare more effectively and saved me hours of manual note-taking."
-            </p>
-            <div>
-              <h4 className="font-bold text-slate-900">Abdul Moez</h4>
-              <p className="text-blue-600 text-sm">UOG Student</p>
-            </div>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            <TestimonialCard 
+              image={testinomialmoez}
+              quote="The quizzes feel like real exam questions. It helped me prepare more effectively and saved me hours of manual note-taking."
+              name="Abdul Moez"
+              role="UOG Student"
+            />
+            <TestimonialCard 
+              image={testinomialibtihaj}
+              quote="The automated flashcards cut my study time in half. I can easily review chapters on my phone right before class!"
+              name="Ibtihaj"
+              role="UOG Student"
+            />
+            <TestimonialCard 
+              image={testinomialhassan} 
+              quote="The AI summaries are an absolute lifesaver for long research papers. Highly recommend this tool for any university student."
+              name="Hassan Ali Tahir"
+              role="UOG Student"
+            />
           </div>
         </div>
       </section>
@@ -298,13 +298,11 @@ const LandingPage = () => {
       <footer className="bg-slate-900 text-slate-300 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
-          {/* CTA Area */}
           <div className="bg-blue-600 rounded-2xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-6 mb-12 shadow-2xl shadow-blue-900/50">
             <div>
               <h3 className="text-2xl font-bold text-white mb-2">Start Studying Smarter Today</h3>
               <p className="text-blue-100">Let AI simplify your study routine.</p>
             </div>
-            {/* ✅ UPDATED: Footer Join Now Button */}
             <button 
               onClick={() => navigate('/signup')} 
               className="px-8 py-3 bg-white text-blue-600 font-bold rounded-full hover:bg-slate-100 transition"
@@ -396,6 +394,28 @@ const FaqItem = ({ index, question, answer, isOpen, onClick }) => (
       className={`px-4 text-slate-600 text-sm transition-all duration-300 ease-in-out ${isOpen ? 'max-h-40 pb-4 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}
     >
       {answer}
+    </div>
+  </div>
+);
+
+// 👇 NEW: Reusable Testimonial Card Component
+const TestimonialCard = ({ image, quote, name, role }) => (
+  <div className="bg-white p-8 rounded-2xl shadow-xl border border-blue-100 flex flex-col h-full hover:-translate-y-1 transition duration-300">
+    <div className="flex justify-center mb-6">
+      <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold text-2xl overflow-hidden shadow-inner">
+        {image ? (
+          <img src={image} alt={name} className="w-full h-full object-cover" />
+        ) : (
+          name.charAt(0)
+        )}
+      </div>
+    </div>
+    <p className="text-slate-700 italic mb-6 flex-1 text-center leading-relaxed">
+      "{quote}"
+    </p>
+    <div className="text-center mt-auto">
+      <h4 className="font-bold text-slate-900">{name}</h4>
+      <p className="text-blue-600 text-sm font-medium">{role}</p>
     </div>
   </div>
 );

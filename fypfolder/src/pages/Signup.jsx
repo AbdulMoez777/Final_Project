@@ -6,6 +6,7 @@ import { GoogleLogin } from "@react-oauth/google";
 const Signup = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   // 1. State for form data
   const [formData, setFormData] = useState({
@@ -35,8 +36,7 @@ const Signup = () => {
     setLoading(true);
 
     try {
-      // Send data to Django
-      // ✅ CORRECT:
+      
       const response = await fetch("http://127.0.0.1:8000/api/signup/", {
         method: "POST",
         headers: {
@@ -48,12 +48,16 @@ const Signup = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // Success! Redirect to login
-        alert("Account created successfully! Please login.");
-        navigate("/login");
+        
+        setSuccessMessage("Account created successfully! Redirecting to login...");
+        
+        
+        setTimeout(() => {
+          navigate("/login");
+        }, 2000);
       } else {
-        // Error from backend (e.g., "Email already exists")
-        setError(data.error || "Something went wrong");
+        
+        setError(data.error || "Email already in use or invalid data.");
       }
     } catch (err) {
       setError("Failed to connect to the server. Is it running?");
@@ -126,6 +130,14 @@ const Signup = () => {
 
         {/* Form Fields */}
         <div className="space-y-4">
+          {/*  PASTE THIS SUCCESS BLOCK HERE  */}
+          {successMessage && (
+            <div className="p-4 bg-green-50 text-green-800 text-sm font-medium rounded-xl border border-green-200 flex items-center shadow-sm">
+              <Check size={18} className="mr-2 text-green-600" />
+              {successMessage}
+            </div>
+          )}
+          {/*  END SUCCESS BLOCK  */}
           {/* Error Message Display */}
           {error && (
             <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-200">

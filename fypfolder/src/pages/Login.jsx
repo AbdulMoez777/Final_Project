@@ -4,17 +4,21 @@ import { Eye, EyeOff } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 
 const Login = () => {
-  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
-
   
+  // 👇 Added this state variable for the custom error message
+  const [error, setError] = useState("");
+
   const handleLogin = async () => {
+    // Clear any previous errors when they try again
+    setError("");
+
     // Basic check: Don't send empty data
     if (!email || !password) {
-      alert("Please fill in both email and password.");
+      setError("Please fill in both email and password.");
       return;
     }
 
@@ -29,25 +33,22 @@ const Login = () => {
       const data = await response.json();
 
       if (response.ok) {
-
         localStorage.setItem('token', data.token);
         console.log("Login Success!");
-        
         
         if (data.is_admin) {
             navigate('/admin-dashboard'); 
         } else {
             navigate('/dashboard');       
         }
-        
 
       } else {
-        
-        alert(data.error || 'Login failed. Check your password.');
+        // 👇 Replaced the alert with the custom error state
+        setError(data.error || 'Invalid email or password.');
       }
     } catch (error) {
       console.error("Connection Error:", error);
-      alert('Failed to connect to the server. Is the backend running?');
+      setError('Failed to connect to the server. Is the backend running?');
     }
   };
 
@@ -71,7 +72,6 @@ const Login = () => {
         console.log("Backend accepted Google Login!", data);
         
         // 3. Save the NEW ticket, overwriting the hello@gmail.com ticket
-        // (Assuming you use localStorage for tokens. If you use cookies, you can skip this line)
         if (data.key) {
             localStorage.setItem('token', data.key); 
         }
@@ -80,11 +80,11 @@ const Login = () => {
         navigate('/dashboard');
       } else {
         console.error("Backend rejected Google token:", data);
-        alert("Server failed to verify Google Login.");
+        setError("Server failed to verify Google Login.");
       }
     } catch (error) {
       console.error("Error during Google Login:", error);
-      alert("Cannot connect to backend.");
+      setError("Cannot connect to backend.");
     }
   };
 
@@ -95,6 +95,18 @@ const Login = () => {
         <p className="text-center text-slate-500 mb-6">Welcome back!</p>
         
         <div className="space-y-4">
+          
+          {/* 👇 Added the custom red error box UI here 👇 */}
+          {error && (
+            <div className="p-3 mb-4 bg-red-50 text-red-600 text-sm font-medium rounded-lg border border-red-200 flex items-center gap-2 shadow-sm animate-fade-in-down">
+              <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{error}</span>
+            </div>
+          )}
+          {/* 👆 End error box 👆 */}
+
           <div>
             <label className="block text-sm font-medium text-slate-600 mb-1">Email Id</label>
             <input 
@@ -110,7 +122,7 @@ const Login = () => {
             <label className="block text-sm font-medium text-slate-600 mb-1">Password</label>
             <div className="relative">
               <input 
-                type={showPassword ? "text" : "password"} // <--- Toggles text/dots
+                type={showPassword ? "text" : "password"} 
                 className="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none pr-10"
                 placeholder="••••••••"
                 value={password}
@@ -129,9 +141,8 @@ const Login = () => {
             </div>
           </div>
 
-          
           <button 
-            onClick={handleLogin} // <--- This connects the button to the function!
+            onClick={handleLogin} 
             className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition shadow-md"
           >
             Sign In
@@ -148,7 +159,7 @@ const Login = () => {
             onSuccess={handleGoogleSuccess}
             onError={() => {
               console.log('Google Login Failed');
-              alert("Google Login Failed!");
+              setError("Google Login Failed!");
             }}
             useOneTap
           />

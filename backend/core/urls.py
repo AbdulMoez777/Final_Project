@@ -3,7 +3,7 @@ from django.urls import path
 from core.views import signup, login_view, summarize_text, manage_users, generate_quiz, generate_flashcards, extract_text_from_file, get_recent_activity, save_quiz_score
 from . import views
 
-# 👇 ADDED THESE TWO IMPORTS FOR PROFILE PICTURES
+#  ADDED THESE TWO IMPORTS FOR PROFILE PICTURES
 from django.conf import settings
 from django.conf.urls.static import static
 

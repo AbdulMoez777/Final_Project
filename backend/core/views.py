@@ -214,7 +214,7 @@ def generate_flashcards(request):
         )
         
         raw_data = json.loads(response.choices[0].message.content)
-        # 👇 Extract the exact array that React expects!
+        #  Extract the exact array that React expects!
         flashcards_array = raw_data.get('flashcard_array', [])
         
         activity = AIActivity.objects.create(

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom'; 
 import heropng from '../assets/Hero.png';
 import testinomialmoez from '../assets/testinomialmoez.jpeg'; 
-import testinomialibtihaj from '../assets/testinomialibtihaj.jpeg'; 
+import testinomialibtihaj from '../assets/testinomialIbtihaj.jpeg'; 
 import testinomialhassan from '../assets/testinomialhassan.jpeg'; 
 
 import { 

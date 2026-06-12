@@ -1,21 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, PlusCircle } from "lucide-react";
+import { ArrowLeft, PlusCircle, Download } from "lucide-react";
+import html2pdf from "html2pdf.js";
 
 const FlashcardsPage = () => {
   const navigate = useNavigate();
   const [inputText, setInputText] = useState('');
   const [flashcards, setFlashcards] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [flippedCards, setFlippedCards] = useState([]); // Keeps track of which cards are flipped
+  const [flippedCards, setFlippedCards] = useState([]);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
-  // Function to handle file uploads
-  // This function takes the selected file and sends it to your new Django extract-text API
+  // 1. Create the reference for the PDF generator
+  const contentRef = useRef();
+
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    // Create a form package to send the file (since it's a file, not text)
     const formData = new FormData();
     formData.append('file', file);
 
@@ -29,7 +31,6 @@ const FlashcardsPage = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // Drop the extracted text straight into your existing textarea!
         setInputText(data.text);
       } else {
         alert("Error reading file: " + data.error);
@@ -39,45 +40,36 @@ const FlashcardsPage = () => {
       alert("Failed to upload the file.");
     } finally {
       setIsLoading(false);
-      // Reset the file input so you can upload the exact same file again if you want to
       event.target.value = null;
     }
   };
-  // END OF File Upload CODE
 
-  // This function runs when you click "Generate"
   const handleGenerate = async () => {
     if (!inputText) return;
 
     setIsLoading(true);
-    setFlashcards([]); // Clear previous cards
-    setFlippedCards([]); // Reset flipped state
+    setFlashcards([]);
+    setFlippedCards([]);
 
     try {
       const token = localStorage.getItem('token');
-
-      // Send the text to my Django backend
       const response = await fetch('http://localhost:8000/api/generate-flashcards/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Token ${token}` // Show the badge to Django
+          'Authorization': `Token ${token}`
         },
         body: JSON.stringify({ text: inputText }),
       });
 
-      // 👇 THE FIX: Read Django's specific error message instead of throwing a generic one
       if (!response.ok) {
         const errorData = await response.json();
         alert(errorData.error || 'Failed to generate flashcards.'); 
         setIsLoading(false);
-        return; // Stop the function here
+        return; 
       }
 
-      // Get the JSON array back from DJANGO/OpenAI
       const data = await response.json();
-
-      // Put the real AI flashcards on the screen
       setFlashcards(data);
 
     } catch (error) {
@@ -88,20 +80,48 @@ const FlashcardsPage = () => {
     }
   };
 
-  // Function to flip a specific card
   const toggleCard = (index) => {
     if (flippedCards.includes(index)) {
-      setFlippedCards(flippedCards.filter(i => i !== index)); // Unflip
+      setFlippedCards(flippedCards.filter(i => i !== index));
     } else {
-      setFlippedCards([...flippedCards, index]); // Flip
+      setFlippedCards([...flippedCards, index]);
     }
   };
 
-  // Function to clear the board and start over
   const handleGenerateNew = () => {
     setFlashcards([]);
     setInputText('');
     setFlippedCards([]);
+  };
+
+  // 2. The PDF Download Function
+  const handleDownloadPDF = async () => {
+    const element = contentRef.current;
+    if (!element) return;
+
+    setIsGeneratingPdf(true); 
+
+    const options = {
+      margin:       15,
+      filename:     'AI_Study_Flashcards.pdf',
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { 
+        scale: 2, 
+        useCORS: true, 
+        scrollY: 0, 
+        windowWidth: document.documentElement.offsetWidth 
+      },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    try {
+      await html2pdf().set(options).from(element).save();
+    } catch (error) {
+      console.error("PDF Generation Error:", error);
+      alert("Failed to generate PDF. Please try again.");
+    } finally {
+      setIsGeneratingPdf(false); 
+    }
   };
 
   return (
@@ -118,7 +138,6 @@ const FlashcardsPage = () => {
 
       {/* Input Section */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
-        {/* The Upload File Button */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Upload a File (PDF, PPTX, TXT) or Paste Text
@@ -152,37 +171,59 @@ const FlashcardsPage = () => {
       
       {flashcards.length > 0 && (
         <div>
-          <h2 className="text-xl font-bold mb-4">Your Revision Cards</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* 3. Wrap the Output in the contentRef and bypass Tailwind colors */}
+          <div ref={contentRef} className="p-4" style={{ backgroundColor: '#f8fafc' }}>
+            <h2 className="text-xl font-bold mb-6" style={{ color: '#0f172a' }}>Your Revision Cards</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {flashcards.map((card, index) => {
+                const isFlipped = flippedCards.includes(index);
 
-            {flashcards.map((card, index) => {
-              const isFlipped = flippedCards.includes(index);
+                return (
+                  <div
+                    key={index}
+                    onClick={() => toggleCard(index)}
+                    className={`relative p-6 rounded-xl shadow-md cursor-pointer transition-all duration-300 min-h-[200px] flex flex-col items-center justify-center text-center border-2 
+                      ${isFlipped ? 'bg-orange-500 border-orange-500 text-white' : 'bg-white border-orange-200 text-gray-800 hover:border-orange-500'}`}
+                    // 4. Force standard hex colors here to stop the PDF crash
+                    style={{
+                      backgroundColor: isFlipped ? '#f97316' : '#ffffff',
+                      borderColor: isFlipped ? '#f97316' : '#fed7aa',
+                      color: isFlipped ? '#ffffff' : '#1f2937'
+                    }}
+                  >
+                    <span className="absolute top-3 left-4 text-xs font-bold opacity-50 uppercase tracking-wider">
+                      {isFlipped ? 'Answer' : 'Question'}
+                    </span>
 
-              return (
-                <div
-                  key={index}
-                  onClick={() => toggleCard(index)}
-                  className={`relative p-6 rounded-xl shadow-md cursor-pointer transition-all duration-300 min-h-[200px] flex flex-col items-center justify-center text-center border-2 
-                    ${isFlipped ? 'bg-orange-500 border-orange-500 text-white' : 'bg-white border-orange-200 text-gray-800 hover:border-orange-500'}`}
-                >
-                  <span className="absolute top-3 left-4 text-xs font-bold opacity-50 uppercase tracking-wider">
-                    {isFlipped ? 'Answer' : 'Question'}
-                  </span>
+                    <h3 className="text-lg font-medium mt-4">
+                      {isFlipped ? card.answer : card.question}
+                    </h3>
 
-                  <h3 className="text-lg font-medium mt-4">
-                    {isFlipped ? card.answer : card.question}
-                  </h3>
-
-                  <span className="absolute bottom-3 text-xs opacity-60">
-                    Click to flip
-                  </span>
-                </div>
-              );
-            })}
-
+                    {/* Hide the "Click to flip" text from the PDF since it's a printed document */}
+                    <span 
+                      className="absolute bottom-3 text-xs opacity-60"
+                      data-html2canvas-ignore="true" 
+                    >
+                      Click to flip
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="w-full flex justify-end mt-10">
+          <div className="w-full flex justify-end gap-4 mt-10">
+            {/* 5. The Download Button */}
+            <button
+              onClick={handleDownloadPDF}
+              disabled={isGeneratingPdf}
+              className={`flex items-center gap-2 px-6 py-2.5 text-white rounded-xl transition-all shadow-sm font-medium ${isGeneratingPdf ? 'bg-emerald-400 cursor-not-allowed' : 'bg-emerald-500 hover:bg-emerald-600 hover:shadow-md hover:-translate-y-0.5'}`}
+            >
+              <Download size={18} />
+              {isGeneratingPdf ? 'Generating PDF...' : 'Download PDF'}
+            </button>
+
             <button
               onClick={handleGenerateNew}
               className="flex items-center gap-2 px-6 py-2.5 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-all shadow-sm font-medium hover:shadow-md hover:-translate-y-0.5"

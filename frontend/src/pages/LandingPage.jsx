@@ -28,6 +28,15 @@ const LandingPage = () => {
     setOpenFaq(openFaq === index ? null : index);
   };
 
+  const handleScroll = (e, targetId) => {
+    e.preventDefault(); 
+    const element = document.getElementById(targetId);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" }); 
+    }
+    setIsMenuOpen(false); 
+  };
+
   return (
     <div className="min-h-screen bg-white font-sans text-slate-800">
       {/* --- NAVBAR --- */}
@@ -47,19 +56,22 @@ const LandingPage = () => {
             <div className="hidden md:flex items-center space-x-8">
               <a
                 href="#features"
-                className="text-slate-600 hover:text-blue-600 font-medium"
+                onClick={(e) => handleScroll(e, 'features')}
+                className="text-slate-600 hover:text-blue-600 font-medium cursor-pointer"
               >
                 Features
               </a>
               <a
                 href="#how-it-works"
-                className="text-slate-600 hover:text-blue-600 font-medium"
+                onClick={(e) => handleScroll(e, 'how-it-works')}
+                className="text-slate-600 hover:text-blue-600 font-medium cursor-pointer"
               >
                 How It Works
               </a>
               <a
                 href="#faq"
-                className="text-slate-600 hover:text-blue-600 font-medium"
+                onClick={(e) => handleScroll(e, 'faq')}
+                className="text-slate-600 hover:text-blue-600 font-medium cursor-pointer"
               >
                 FAQ
               </a>

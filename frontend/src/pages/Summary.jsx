@@ -17,8 +17,9 @@ const Summary = () => {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [summaryType, setSummaryType] = useState("default");
 
-  // 1. Create the reference for the PDF generator
+  // Reference for PDF export targeting
   const contentRef = useRef();
 
   const handleFileUpload = async (event) => {
@@ -65,7 +66,10 @@ const Summary = () => {
           "Content-Type": "application/json",
           Authorization: `Token ${token}`,
         },
-        body: JSON.stringify({ text: inputText }),
+        body: JSON.stringify({ 
+          text: inputText,
+          type: summaryType 
+        }),
       });
 
       const data = await response.json();
@@ -91,13 +95,13 @@ const Summary = () => {
   const handleGenerateNew = () => {
     setSummary("");
     setInputText("");
+    setSummaryType("default");
   };
 
   const handleDownloadPDF = async () => {
     const element = contentRef.current;
     if (!element) return;
 
-    // Set loading to true so the button updates
     setIsGeneratingPdf(true); 
 
     const options = {
@@ -125,7 +129,6 @@ const Summary = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 p-8 flex flex-col items-center font-sans">
-      {/* Header */}
       <div className="w-full max-w-4xl flex items-center justify-between mb-8">
         <div className="w-40">
           <button
@@ -148,7 +151,6 @@ const Summary = () => {
       </div>
 
       <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-8 h-[600px]">
-        {/* Input Side */}
         <div className="flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="p-4 border-b border-slate-100 bg-slate-50 flex flex-col gap-3">
             <span className="font-semibold text-slate-700">
@@ -168,6 +170,31 @@ const Summary = () => {
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
           ></textarea>
+          
+          <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+            <span className="text-sm font-semibold text-slate-600">Style:</span>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setSummaryType('default')}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${summaryType === 'default' ? 'bg-blue-600 text-white' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'}`}
+              >
+                Standard
+              </button>
+              <button 
+                onClick={() => setSummaryType('short')}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${summaryType === 'short' ? 'bg-blue-600 text-white' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'}`}
+              >
+                Short
+              </button>
+              <button 
+                onClick={() => setSummaryType('bullets')}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${summaryType === 'bullets' ? 'bg-blue-600 text-white' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'}`}
+              >
+                Bullet Points
+              </button>
+            </div>
+          </div>
+
           <div className="p-4 border-t border-slate-100 bg-white">
             <button
               onClick={handleSummarize}
@@ -185,7 +212,6 @@ const Summary = () => {
           </div>
         </div>
 
-        {/* Output Side */}
         <div className="flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative">
           <div className="p-4 border-b border-slate-100 bg-blue-50 font-semibold text-blue-800 flex justify-between items-center">
             <span>AI Summary</span>
@@ -205,7 +231,7 @@ const Summary = () => {
                 <p>Analyzing text...</p>
               </div>
             ) : summary ? (
-              // 👇 THIS IS THE CRITICAL FIX: Added inline styles here to bypass the oklch crash!
+              // Inline styles used to prevent html2canvas parsing errors with Tailwind oklch colors
               <div 
                 ref={contentRef} 
                 className="p-8" 
@@ -233,11 +259,9 @@ const Summary = () => {
         </div>
       </div>
 
-      {/* Bottom Bar */}
       <div className="w-full max-w-4xl flex justify-end gap-4 mt-6">
         {summary && (
           <>
-            {/* 👇 CRITICAL FIX 2: Added dynamic text and disabled state */}
             <button
               onClick={handleDownloadPDF}
               disabled={isGeneratingPdf}

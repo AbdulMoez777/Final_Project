@@ -118,24 +118,37 @@ def summarize_text(request):
     text = request.data.get('text', '')
     file_name = request.data.get('file_name', 'Pasted Notes')
     
+    # 1. Grab the new summary style choice from React (defaults to 'default' if missing)
+    summary_type = request.data.get('type', 'default') 
+    
     if not text:
         return Response({'error': 'No text provided'}, status=status.HTTP_400_BAD_REQUEST)
 
+    # 2. Dynamically engineer the prompt based on what the user clicked
+    if summary_type == 'short':
+        system_instruction = "You are an expert study assistant. Summarize the following educational text in exactly 2 or 3 highly concise sentences. Get straight to the point."
+    elif summary_type == 'bullets':
+        system_instruction = "You are an expert study assistant. Summarize the following educational text using only clear, concise bullet points. Focus on key concepts and definitions. Do not write paragraphs."
+    else:
+        system_instruction = "You are an expert study assistant. Provide a well-structured, comprehensive summary of the following educational text, highlighting key concepts, definitions, and main ideas."
+
     try:
+        # 3. Send the dynamic instruction to OpenAI
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are an expert study assistant. Summarize the following educational text concisely, highlighting key concepts, definitions, and main ideas."},
+                {"role": "system", "content": system_instruction},
                 {"role": "user", "content": text}
             ]
         )
         
         summary_text = response.choices[0].message.content
         
+        # 4. Save the activity to the database (Bonus: Adds the style to the title!)
         activity = AIActivity.objects.create(
             user=request.user,
             activity_type="Summary",
-            title="Document Summary",
+            title=f"Document Summary ({summary_type.capitalize()})", 
             file_name=file_name,
             content=summary_text 
         )
@@ -145,7 +158,6 @@ def summarize_text(request):
     except Exception as e:
         print("Summary Error:", str(e))
         return Response({'error': 'Failed to generate summary. Please try again.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 # Generate Quiz
 @api_view(['POST'])

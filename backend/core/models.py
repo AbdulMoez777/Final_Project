@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
 
-# --- Your Existing Activity Table ---
+
 class AIActivity(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='activities', null=True, blank=True)
     activity_type = models.CharField(max_length=50) # Will be 'Summary', 'Quiz', or 'Flashcards'
@@ -19,9 +19,9 @@ class AIActivity(models.Model):
         return f"{self.activity_type} - {self.title}"
 
 
-# 👇 ADDED: The New Profile Table for Avatar Pictures 👇
+
 class UserProfile(models.Model):
-    # This securely links this profile to the built-in Django User
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     
     # This is where the uploaded image will be saved!

@@ -15,6 +15,11 @@ from .models import AIActivity, UserProfile, DailyGoal
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 import docx
+import re
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from youtube_transcript_api import YouTubeTranscriptApi
 
 # Initialize the AI Client
 client = OpenAI(api_key=settings.OPENAI_API_KEY)
@@ -504,3 +509,35 @@ def quick_chat(request):
     except Exception as e:
         print("Chat Error:", str(e))
         return Response({'error': 'AI failed to respond.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+
+@api_view(['POST'])
+def extract_youtube_transcript(request):
+    youtube_url = request.data.get('url', '')
+    
+    if not youtube_url:
+        return Response({'error': 'No URL provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        # 1. Use Regex to extract the 11-character YouTube Video ID from the URL
+        video_id_match = re.search(r'(?:v=|\/)([0-9A-Za-z_-]{11}).*', youtube_url)
+        
+        if not video_id_match:
+            return Response({'error': 'Invalid YouTube URL'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        video_id = video_id_match.group(1)
+
+        # 2. Fetch the transcript using the updated 2026 syntax (.fetch() instead of get_transcript)
+        transcript_list = YouTubeTranscriptApi().fetch(video_id)
+        
+        # 3. Combine all the timestamped text into one giant paragraph
+        full_transcript = " ".join([fragment.text for fragment in transcript_list])
+        
+        return Response({'text': full_transcript}, status=status.HTTP_200_OK)
+
+    # 4. Catch missing transcripts or disabled subtitles globally
+    except Exception as e:
+        print("YouTube Extraction Error:", str(e))
+        return Response({'error': 'No subtitles available for this video or extraction failed.'}, status=status.HTTP_400_BAD_REQUEST)

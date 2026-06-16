@@ -11,7 +11,7 @@ import {
   FileText,
   UploadCloud,
   PieChart,
-  Lock,
+  Youtube, // Added YouTube Icon
   Menu,
   X,
   ChevronDown,
@@ -24,19 +24,22 @@ const LandingPage = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
 
+  
+
   const toggleFaq = (index) => {
     setOpenFaq(openFaq === index ? null : index);
   };
 
   const handleScroll = (e, targetId) => {
-    e.preventDefault(); 
+    e.preventDefault();
     const element = document.getElementById(targetId);
     if (element) {
-      element.scrollIntoView({ behavior: "smooth" }); 
+      element.scrollIntoView({ behavior: "smooth" });
     }
-    setIsMenuOpen(false); 
+    setIsMenuOpen(false);
   };
 
+  
   return (
     <div className="min-h-screen bg-white font-sans text-slate-800">
       {/* --- NAVBAR --- */}
@@ -56,21 +59,21 @@ const LandingPage = () => {
             <div className="hidden md:flex items-center space-x-8">
               <a
                 href="#features"
-                onClick={(e) => handleScroll(e, 'features')}
+                onClick={(e) => handleScroll(e, "features")}
                 className="text-slate-600 hover:text-blue-600 font-medium cursor-pointer"
               >
                 Features
               </a>
               <a
                 href="#how-it-works"
-                onClick={(e) => handleScroll(e, 'how-it-works')}
+                onClick={(e) => handleScroll(e, "how-it-works")}
                 className="text-slate-600 hover:text-blue-600 font-medium cursor-pointer"
               >
                 How It Works
               </a>
               <a
                 href="#faq"
-                onClick={(e) => handleScroll(e, 'faq')}
+                onClick={(e) => handleScroll(e, "faq")}
                 className="text-slate-600 hover:text-blue-600 font-medium cursor-pointer"
               >
                 FAQ
@@ -141,9 +144,6 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col-reverse lg:flex-row items-center gap-12">
           {/* Text Content */}
           <div className="lg:w-1/2 text-center lg:text-left">
-            <div className="inline-block px-4 py-1.5 mb-6 text-sm font-semibold text-blue-700 bg-blue-50 rounded-full border border-blue-100">
-              🚀 AI-Powered Learning
-            </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 leading-tight mb-6">
               Study Smarter With <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
@@ -162,20 +162,14 @@ const LandingPage = () => {
               >
                 Get Started Free <ArrowRight size={20} />
               </button>
-              <button className="px-8 py-3.5 text-slate-700 font-bold bg-white border border-slate-200 rounded-full hover:bg-slate-50 transition">
+              {/* Pointed to the new Live Demo section */}
+              <a
+                href="#demo"
+                onClick={(e) => handleScroll(e, "demo")}
+                className="px-8 py-3.5 text-slate-700 font-bold bg-white border border-slate-200 rounded-full hover:bg-slate-50 transition inline-flex items-center justify-center"
+              >
                 View Demo
-              </button>
-            </div>
-            <div className="mt-8 flex items-center justify-center lg:justify-start gap-4 text-sm text-slate-500">
-              <div className="flex -space-x-2">
-                {[1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className="w-8 h-8 rounded-full bg-slate-200 border-2 border-white"
-                  ></div>
-                ))}
-              </div>
-              <p>Trusted by 5,000+ Students</p>
+              </a>
             </div>
           </div>
 
@@ -195,6 +189,7 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
+
 
       {/* --- FEATURES SECTION --- */}
       <section id="features" className="py-20 bg-slate-50">
@@ -230,14 +225,15 @@ const LandingPage = () => {
               desc="Upload PDFs, DOCX, and text files. We handle the processing securely."
             />
             <FeatureCard
-              icon={<PieChart size={24} className="text-red-600" />}
+              icon={<PieChart size={24} className="text-indigo-600" />}
               title="Progress Tracking"
               desc="Visualize your learning journey with detailed analytics and charts."
             />
+            {/* 👇 NEW: YouTube Feature Card instead of Secure Storage */}
             <FeatureCard
-              icon={<Lock size={24} className="text-teal-600" />}
-              title="Secure Storage"
-              desc="Your data is encrypted and stored securely in the cloud."
+              icon={<Youtube size={24} className="text-red-600" />}
+              title="YouTube to Notes"
+              desc="Paste any educational YouTube link to instantly generate transcripts and study material."
             />
           </div>
         </div>
@@ -260,7 +256,7 @@ const LandingPage = () => {
             <StepCard
               number="01"
               title="Upload Your Notes"
-              desc="Upload your slides, PDFs or handwritten notes to the system."
+              desc="Upload your slides, PDFs or paste a YouTube link to the system."
             />
             <StepCard
               number="02"
@@ -276,7 +272,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* --- TESTIMONIALS SECTION (UPDATED) --- */}
+      {/* --- TESTIMONIALS SECTION --- */}
       <section className="py-20 bg-blue-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -331,7 +327,8 @@ const LandingPage = () => {
             <FaqItem
               index={2}
               question="What types of files can I upload?"
-              answer="We currently support PDF, DOCX, PowerPoint (PPTX), and plain text files. Image-to-text support is coming soon!"
+              // 👇 Updated to mention YouTube
+              answer="We currently support PDF, DOCX, PowerPoint (PPTX), plain text files, and direct YouTube Video Links!"
               isOpen={openFaq === 2}
               onClick={() => toggleFaq(2)}
             />
@@ -487,14 +484,15 @@ const FaqItem = ({ index, question, answer, isOpen, onClick }) => (
       )}
     </button>
     <div
-      className={`px-4 text-slate-600 text-sm transition-all duration-300 ease-in-out ${isOpen ? "max-h-40 pb-4 opacity-100" : "max-h-0 opacity-0 overflow-hidden"}`}
+      className={`px-4 text-slate-600 text-sm transition-all duration-300 ease-in-out ${
+        isOpen ? "max-h-40 pb-4 opacity-100" : "max-h-0 opacity-0 overflow-hidden"
+      }`}
     >
       {answer}
     </div>
   </div>
 );
 
-// 👇 NEW: Reusable Testimonial Card Component
 const TestimonialCard = ({ image, quote, name, role }) => (
   <div className="bg-white p-8 rounded-2xl shadow-xl border border-blue-100 flex flex-col h-full hover:-translate-y-1 transition duration-300">
     <div className="flex justify-center mb-6">

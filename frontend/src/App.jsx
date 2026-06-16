@@ -10,6 +10,7 @@ import QuizGenerator from './pages/QuizGenerator';
 import FlashcardsPage from './pages/FlashcardsPage';
 import ActivityViewer from './pages/ActivityViewer';
 import Settings from './pages/Settings';
+import YoutubeNotesPage from './pages/YoutubeNotesPage';
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
         <Route path="/flashcards" element={<FlashcardsPage />} />
         <Route path="/activity/:id" element={<ActivityViewer />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/youtube-notes" element={<YoutubeNotesPage />} />
       </Routes>
     </BrowserRouter>
   );

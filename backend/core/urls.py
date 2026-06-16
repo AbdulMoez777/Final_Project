@@ -25,6 +25,7 @@ urlpatterns = [
     path('api/goals/<int:goal_id>/', views.manage_goals), 
     path('api/chat/', views.quick_chat),
     path('api/profile/', views.user_profile),
+    path('api/extract-youtube/', views.extract_youtube_transcript, name='extract_youtube'),
 ]
 
 

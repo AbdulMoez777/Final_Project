@@ -15,6 +15,7 @@ import {
   MessageCircle,
   X,
   Send,
+  Youtube,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -371,7 +372,7 @@ const Dashboard = () => {
             <h3 className="text-lg font-bold text-slate-800 mb-4">
               Quick Actions
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <ActionCard
                 onClick={() => navigate("/summary")}
                 title="Generate Summary"
@@ -392,6 +393,13 @@ const Dashboard = () => {
                 desc="Convert slides into revision cards."
                 icon={<Layers size={32} className="text-white" />}
                 color="bg-orange-500"
+              />
+              <ActionCard
+                onClick={() => navigate("/youtube-notes")}
+                title="YouTube to Notes"
+                desc="Extract transcripts from video links."
+                icon={<Youtube size={32} className="text-white" />}
+                color="bg-red-600"
               />
             </div>
 
@@ -516,7 +524,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* 👇 --- FLOATING CHAT WIDGET ADDED HERE --- 👇 */}
+        
         <div className="fixed bottom-8 right-8 z-50 flex flex-col items-end">
           
           {/* Chat Box (Shows when open) */}

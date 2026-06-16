@@ -14,6 +14,7 @@ from pptx import Presentation
 from .models import AIActivity, UserProfile, DailyGoal
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
+import docx
 
 # Initialize the AI Client
 client = OpenAI(api_key=settings.OPENAI_API_KEY)
@@ -166,17 +167,29 @@ def generate_quiz(request):
     text = request.data.get('text', '')
     file_name = request.data.get('file_name', 'Pasted Notes')
     
+    # 1. Grab the question count from React (default to 5 if missing)
+    question_count = request.data.get('count', 5)
+    
     if not text:
         return Response({'error': 'No text provided'}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
+        # 2. Dynamically inject the count into the instructions using an f-string
+        # Note: We use double braces {{ }} around the JSON so Python doesn't crash!
+        system_instruction = f"""
+        You are a quiz generator. Generate exactly {question_count} multiple-choice questions based on the provided text. 
+        Return ONLY a valid JSON object matching this exact format: 
+        {{"quiz_array": [{{"question": "Sample Question?", "options": ["A) First option", "B) Second option", "C) Third option", "D) Fourth option"], "answer": "A) First option"}}]}}. 
+        The 'answer' field MUST exactly match the full text of the correct option, not just the letter. Do not use markdown blocks.
+        """
+
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             response_format={ "type": "json_object" },
             messages=[
                 {
                     "role": "system", 
-                    "content": "You are a quiz generator. Generate exactly 10 multiple-choice questions based on the provided text. Return ONLY a valid JSON object matching this exact format: {\"quiz_array\": [{\"question\": \"Sample Question?\", \"options\": [\"A) First option\", \"B) Second option\", \"C) Third option\", \"D) Fourth option\"], \"answer\": \"A) First option\"}]}. The 'answer' field MUST exactly match the full text of the correct option, not just the letter. Do not use markdown blocks."
+                    "content": system_instruction.strip()
                 },
                 {"role": "user", "content": text}
             ]
@@ -186,12 +199,14 @@ def generate_quiz(request):
         # Extract the exact array that React expects!
         quiz_array = raw_data.get('quiz_array', [])
 
+        # 3. Save the activity and include the count in the title!
         activity = AIActivity.objects.create(
             user=request.user,
             activity_type='Quiz',
-            title='Interactive Quiz',
+            title=f'Interactive Quiz ({question_count} Questions)',
             file_name=file_name,
-            content=json.dumps(quiz_array)
+            content=json.dumps(quiz_array),
+            total_questions=question_count # Saves to your total_questions model field!
         )
 
         return Response({'quiz': quiz_array, 'activity_id': activity.id}, status=status.HTTP_200_OK)
@@ -199,7 +214,6 @@ def generate_quiz(request):
     except Exception as e:
         print("Quiz Error:", str(e))
         return Response({'error': 'Failed to generate quiz. Please try again.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 
 @api_view(['POST'])
@@ -264,6 +278,12 @@ def extract_text_from_file(request):
             for page in pdf_reader.pages:
                 extracted_text += page.extract_text() + "\n"
                 
+        # 👇 NEW: Handle Word Documents (.docx and .doc)
+        elif filename.endswith('.docx') or filename.endswith('.doc'):
+            doc = docx.Document(file_obj)
+            # Loop through every paragraph and join them with a new line
+            extracted_text = "\n".join([paragraph.text for paragraph in doc.paragraphs])
+                
         elif filename.endswith('.pptx'):
             ppt = Presentation(file_obj)
             for slide in ppt.slides:
@@ -272,14 +292,16 @@ def extract_text_from_file(request):
                         extracted_text += shape.text + "\n"
         
         else:
-            return Response({'error': 'Please upload a PDF, PPTX, or TXT file.'}, status=status.HTTP_400_BAD_REQUEST)
+            # 👇 Updated error message to include Word files
+            return Response({'error': 'Please upload a PDF, Word (DOCX), PPTX, or TXT file.'}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({'text': extracted_text.strip()}, status=status.HTTP_200_OK)
 
     except Exception as e:
         print("File Extraction Error:", str(e))
-        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+        # Updated to a more user-friendly error message instead of showing raw Python errors to the frontend
+        return Response({'error': 'Failed to read file. It might be corrupted or in an unsupported format.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
 # Retrieve Dashboard Activity Data
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

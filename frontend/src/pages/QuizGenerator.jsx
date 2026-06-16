@@ -16,13 +16,12 @@ const QuizGenerator = () => {
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Game State
+  /* Quiz State Management */
   const [quizData, setQuizData] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [questionCount, setQuestionCount] = useState(5);
   const [score, setScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
-
-  // This remembers the user's exact answers for the review screen!
   const [userAnswers, setUserAnswers] = useState([]);
 
   const handleFileUpload = async (event) => {
@@ -60,7 +59,7 @@ const QuizGenerator = () => {
 
     setIsLoading(true);
 
-    // Reset EVERYTHING for a new quiz
+    /* Reset state for new quiz generation */
     setQuizData([]);
     setCurrentQuestion(0);
     setScore(0);
@@ -74,17 +73,19 @@ const QuizGenerator = () => {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "Authorization": `Token ${token}` // Show the badge!
+          "Authorization": `Token ${token}` 
         },
-        body: JSON.stringify({ text: inputText }),
+        body: JSON.stringify({ 
+          text: inputText,
+          count: questionCount 
+        }),
       });
 
-      // The FIX: Read Django's specific error message (like the Quota limit)
       if (!response.ok) {
         const errorData = await response.json();
         alert(errorData.error || "Failed to generate quiz.");
         setIsLoading(false);
-        return; // Stop the function
+        return;
       }
 
       const data = await response.json();
@@ -98,15 +99,13 @@ const QuizGenerator = () => {
     }
   };
 
-  // Now saves the final score AND the quiz questions to Django when the quiz ends!
   const handleAnswerClick = async (selectedOption) => {
     const isCorrect = selectedOption === quizData[currentQuestion].answer;
-
-    // Calculate what the score will be after this click
     const newScore = isCorrect ? score + 1 : score;
+    
     if (isCorrect) setScore(newScore);
 
-    // Save to history for the review screen
+    /* Append to answer history for final review */
     setUserAnswers((prev) => [
       ...prev,
       {
@@ -119,30 +118,29 @@ const QuizGenerator = () => {
 
     const nextQuestion = currentQuestion + 1;
 
-    // Are we moving to the next question, or is the quiz over?
     if (nextQuestion < quizData.length) {
       setCurrentQuestion(nextQuestion);
     } else {
-      setShowResults(true); // Show the trophy screen
+      setShowResults(true);
 
-      // The quiz is over! Send the final score to Django instantly!
+      /* Submit final score and quiz data to the backend */
       try {
-        const token = localStorage.getItem('token'); // Get token for saving score
+        const token = localStorage.getItem('token'); 
         
         await fetch("http://127.0.0.1:8000/api/save-score/", {
           method: "POST",
           headers: { 
             "Content-Type": "application/json",
-            "Authorization": `Token ${token}` // Show the badge here too!
+            "Authorization": `Token ${token}`
           },
           body: JSON.stringify({
             score: newScore,
             total: quizData.length,
-            quiz_data: quizData // 👇 THIS WAS THE MISSING LINE! Now the questions are saved!
+            quiz_data: quizData 
           }),
         });
       } catch (error) {
-        console.error("Failed to save score to database");
+        console.error("Failed to save score to database", error);
       }
     }
   };
@@ -152,7 +150,8 @@ const QuizGenerator = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-purple-50/50 p-4 md:p-8 font-sans text-slate-800">
       <div className="max-w-5xl mx-auto">
-        {/* Header Section */}
+        
+        {/* Navigation Header */}
         <button
           onClick={() => navigate("/dashboard")}
           className="flex items-center text-slate-500 hover:text-purple-600 mb-8 transition-colors font-medium group"
@@ -178,7 +177,8 @@ const QuizGenerator = () => {
         </div>
 
         <div className="grid lg:grid-cols-12 gap-8 items-start">
-          {/* LEFT SIDE: Input Area */}
+          
+          {/* Input Section */}
           <div className="lg:col-span-5 bg-white p-6 md:p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
             <div className="mb-6 group">
               <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-3 uppercase tracking-wider">
@@ -188,7 +188,7 @@ const QuizGenerator = () => {
               <div className="relative border-2 border-dashed border-purple-200 rounded-2xl p-4 hover:bg-purple-50 hover:border-purple-400 transition-colors">
                 <input
                   type="file"
-                  accept=".pdf,.pptx,.txt"
+                  accept=".pdf,.docx,.doc,.pptx,.txt"
                   onChange={handleFileUpload}
                   disabled={isLoading}
                   className="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-purple-600 file:text-white hover:file:bg-purple-700 transition cursor-pointer"
@@ -200,11 +200,30 @@ const QuizGenerator = () => {
               Text Content
             </label>
             <textarea
-              className="w-full h-60 p-5 bg-slate-50 rounded-2xl border border-slate-200 focus:bg-white focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none resize-none transition-all text-slate-600 leading-relaxed"
+              className="w-full h-60 p-5 bg-slate-50 rounded-2xl rounded-b-none border border-slate-200 border-b-0 focus:bg-white focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none resize-none transition-all text-slate-600 leading-relaxed"
               placeholder="Paste your syllabus, textbook chapter, or lecture notes here..."
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
             ></textarea>
+
+            {/* Quiz Length Selector */}
+            <div className="px-5 py-4 bg-slate-50 border border-slate-200 rounded-b-2xl flex items-center justify-between">
+              <span className="text-sm font-semibold text-slate-600">Quiz Length:</span>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => setQuestionCount(5)}
+                  className={`px-4 py-1.5 text-sm font-bold rounded-lg transition ${questionCount === 5 ? 'bg-purple-600 text-white' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'}`}
+                >
+                  5 Questions
+                </button>
+                <button 
+                  onClick={() => setQuestionCount(10)}
+                  className={`px-4 py-1.5 text-sm font-bold rounded-lg transition ${questionCount === 10 ? 'bg-purple-600 text-white' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'}`}
+                >
+                  10 Questions
+                </button>
+              </div>
+            </div>
 
             <button
               onClick={handleGenerate}
@@ -213,8 +232,7 @@ const QuizGenerator = () => {
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="animate-spin" size={24} /> Generating
-                  Magic...
+                  <Loader2 className="animate-spin" size={24} /> Generating...
                 </>
               ) : (
                 <>
@@ -224,9 +242,9 @@ const QuizGenerator = () => {
             </button>
           </div>
 
-          {/* RIGHT SIDE: Game Board */}
+          {/* Assessment Interface */}
           <div className="lg:col-span-7 bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden flex flex-col relative min-h-[600px] max-h-[800px]">
-            {/* Game Header with Progress Bar */}
+            
             <div className="p-6 border-b border-slate-100 bg-gradient-to-r from-purple-50/50 to-indigo-50/50 flex-shrink-0">
               <div className="flex justify-between items-center mb-4">
                 <span className="font-black text-xl text-slate-800 tracking-tight">
@@ -239,7 +257,6 @@ const QuizGenerator = () => {
                 )}
               </div>
 
-              {/* Progress Bar */}
               {quizData.length > 0 && !showResults && (
                 <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
                   <div
@@ -254,7 +271,6 @@ const QuizGenerator = () => {
 
             <div className="flex-1 p-6 md:p-8 overflow-y-auto bg-slate-50/30">
               {isLoading ? (
-                // Loading State
                 <div className="flex flex-col items-center justify-center h-full text-purple-400">
                   <div className="relative">
                     <BrainCircuit
@@ -271,9 +287,7 @@ const QuizGenerator = () => {
                   </p>
                 </div>
               ) : showResults ? (
-                // Final Score Screen WITH Detailed Review
                 <div className="flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-500 pb-8">
-                  {/* The Big Score */}
                   <div className="w-20 h-20 bg-green-100 text-green-500 rounded-full flex items-center justify-center mb-4 shadow-inner">
                     <Trophy size={40} />
                   </div>
@@ -293,7 +307,6 @@ const QuizGenerator = () => {
                     </div>
                   </div>
 
-                  {/* The Detailed Review List */}
                   <div className="w-full max-w-xl mx-auto mt-4 mb-8 text-left">
                     <h3 className="font-extrabold text-xl text-slate-800 mb-4 px-2 border-b-2 border-slate-200 pb-2">
                       Detailed Review
@@ -353,7 +366,6 @@ const QuizGenerator = () => {
                   </button>
                 </div>
               ) : quizData.length > 0 ? (
-                // Active Question Screen
                 <div className="w-full max-w-xl mx-auto h-full flex flex-col justify-center animate-in slide-in-from-right-8 fade-in duration-300">
                   <h3 className="text-2xl font-bold text-slate-800 mb-8 leading-relaxed">
                     {quizData[currentQuestion].question}
@@ -377,7 +389,6 @@ const QuizGenerator = () => {
                   </div>
                 </div>
               ) : (
-                // Empty State
                 <div className="flex flex-col items-center justify-center h-full text-center">
                   <div className="w-32 h-32 bg-slate-50 rounded-full flex items-center justify-center mb-6 border-4 border-white shadow-sm">
                     <BrainCircuit size={48} className="text-slate-300" />

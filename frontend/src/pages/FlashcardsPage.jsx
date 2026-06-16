@@ -1,30 +1,29 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, PlusCircle, Download } from "lucide-react";
 import html2pdf from "html2pdf.js";
 
 const FlashcardsPage = () => {
   const navigate = useNavigate();
-  const [inputText, setInputText] = useState('');
+  const [inputText, setInputText] = useState("");
   const [flashcards, setFlashcards] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [flippedCards, setFlippedCards] = useState([]);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
-  // 1. Create the reference for the PDF generator
-  const contentRef = useRef();
+  // Note: We completely removed the 'useRef' because we no longer need hidden elements!
 
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append("file", file);
 
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/api/extract-text/', {
-        method: 'POST',
+      const response = await fetch("http://localhost:8000/api/extract-text/", {
+        method: "POST",
         body: formData,
       });
 
@@ -52,26 +51,28 @@ const FlashcardsPage = () => {
     setFlippedCards([]);
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8000/api/generate-flashcards/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Token ${token}`
-        },
-        body: JSON.stringify({ text: inputText }),
-      });
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        "http://localhost:8000/api/generate-flashcards/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Token ${token}`,
+          },
+          body: JSON.stringify({ text: inputText }),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
-        alert(errorData.error || 'Failed to generate flashcards.'); 
+        alert(errorData.error || "Failed to generate flashcards.");
         setIsLoading(false);
-        return; 
+        return;
       }
 
       const data = await response.json();
       setFlashcards(data);
-
     } catch (error) {
       console.error("Error:", error);
       alert("Failed to connect to the server. Is Django running?");
@@ -82,7 +83,7 @@ const FlashcardsPage = () => {
 
   const toggleCard = (index) => {
     if (flippedCards.includes(index)) {
-      setFlippedCards(flippedCards.filter(i => i !== index));
+      setFlippedCards(flippedCards.filter((i) => i !== index));
     } else {
       setFlippedCards([...flippedCards, index]);
     }
@@ -90,51 +91,78 @@ const FlashcardsPage = () => {
 
   const handleGenerateNew = () => {
     setFlashcards([]);
-    setInputText('');
+    setInputText("");
     setFlippedCards([]);
   };
 
-  // 2. The PDF Download Function
+  // 👇 THE ULTIMATE FIX: Generating the PDF completely in memory!
   const handleDownloadPDF = async () => {
-    const element = contentRef.current;
-    if (!element) return;
+    setIsGeneratingPdf(true);
 
-    setIsGeneratingPdf(true); 
+    // 1. Create a virtual container that never gets added to your screen
+    const printContainer = document.createElement("div");
+    
+    // 2. Inject pure HTML into it using the data from your flashcards state
+    printContainer.innerHTML = `
+      <div style="padding: 40px; font-family: Arial, sans-serif; color: #1f2937; width: 800px;">
+        <div style="border-bottom: 3px solid #1f2937; padding-bottom: 16px; margin-bottom: 32px;">
+          <h1 style="font-size: 32px; font-weight: 900; margin: 0; color: #111827;">Study Flashcards</h1>
+          <p style="color: #6b7280; margin-top: 8px; font-size: 16px;">Total Cards: ${flashcards.length}</p>
+        </div>
+        
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+          ${flashcards.map((card, index) => `
+            <div style="padding-bottom: 24px; border-bottom: 1px solid #e5e7eb; page-break-inside: avoid;">
+              <h3 style="font-size: 20px; font-weight: 700; color: #1f2937; margin-bottom: 12px; margin-top: 0;">
+                <span style="color: #ea580c; background-color: #fff7ed; padding: 4px 8px; border-radius: 6px; font-size: 16px; margin-right: 8px;">Q${index + 1}.</span>
+                ${card.question}
+              </h3>
+              <div style="padding-left: 45px; color: #4b5563; font-size: 18px; line-height: 1.6;">
+                <span style="font-weight: 800; color: #111827; margin-right: 8px;">Answer:</span> 
+                ${card.answer}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
 
+    // 3. Simple, crash-free options
     const options = {
-      margin:       15,
-      filename:     'AI_Study_Flashcards.pdf',
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { 
-        scale: 2, 
-        useCORS: true, 
-        scrollY: 0, 
-        windowWidth: document.documentElement.offsetWidth 
-      },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      margin: 15,
+      filename: "AI_Study_Flashcards.pdf",
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
     };
 
     try {
-      await html2pdf().set(options).from(element).save();
+      // 4. Pass the virtual container directly to html2pdf
+      await html2pdf().set(options).from(printContainer).save();
     } catch (error) {
       console.error("PDF Generation Error:", error);
       alert("Failed to generate PDF. Please try again.");
     } finally {
-      setIsGeneratingPdf(false); 
+      setIsGeneratingPdf(false);
     }
   };
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
+    <div className="p-8 max-w-6xl mx-auto relative min-h-screen">
       <button
-          onClick={() => navigate("/dashboard")}
-          className="flex items-center text-slate-500 hover:text-orange-500 mb-8 transition-colors font-medium group"
-        >
-          <ArrowLeft size={20} className="mr-2 group-hover:-translate-x-1 transition-transform" /> 
-          Back to Dashboard
-        </button>
+        onClick={() => navigate("/dashboard")}
+        className="flex items-center text-slate-500 hover:text-orange-500 mb-8 transition-colors font-medium group"
+      >
+        <ArrowLeft
+          size={20}
+          className="mr-2 group-hover:-translate-x-1 transition-transform"
+        />
+        Back to Dashboard
+      </button>
       <h1 className="text-3xl font-bold mb-2">Generate Flashcards</h1>
-      <p className="text-gray-600 mb-8">Paste your study notes below and let AI create revision cards for you.</p>
+      <p className="text-gray-600 mb-8">
+        Paste your study notes below and let AI create revision cards for you.
+      </p>
 
       {/* Input Section */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
@@ -144,7 +172,7 @@ const FlashcardsPage = () => {
           </label>
           <input
             type="file"
-            accept=".pdf,.pptx,.txt"
+            accept=".pdf,.docx,.doc,.pptx,.txt"
             onChange={handleFileUpload}
             disabled={isLoading}
             className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
@@ -163,18 +191,22 @@ const FlashcardsPage = () => {
             disabled={isLoading || !inputText}
             className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50"
           >
-            {isLoading ? 'Generating AI Cards...' : 'Generate Flashcards ⚡'}
+            {isLoading ? "Generating AI Cards..." : "Generate Flashcards ⚡"}
           </button>
         </div>
       </div>
 
-      
       {flashcards.length > 0 && (
         <div>
-          {/* 3. Wrap the Output in the contentRef and bypass Tailwind colors */}
-          <div ref={contentRef} className="p-4" style={{ backgroundColor: '#f8fafc' }}>
-            <h2 className="text-xl font-bold mb-6" style={{ color: '#0f172a' }}>Your Revision Cards</h2>
-            
+          {/* VISUAL UI LAYER */}
+          <div
+            className="p-4"
+            style={{ backgroundColor: "#f8fafc", borderRadius: "0.75rem" }}
+          >
+            <h2 className="text-xl font-bold mb-6" style={{ color: "#0f172a" }}>
+              Your Revision Cards
+            </h2>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {flashcards.map((card, index) => {
                 const isFlipped = flippedCards.includes(index);
@@ -184,27 +216,26 @@ const FlashcardsPage = () => {
                     key={index}
                     onClick={() => toggleCard(index)}
                     className={`relative p-6 rounded-xl shadow-md cursor-pointer transition-all duration-300 min-h-[200px] flex flex-col items-center justify-center text-center border-2 
-                      ${isFlipped ? 'bg-orange-500 border-orange-500 text-white' : 'bg-white border-orange-200 text-gray-800 hover:border-orange-500'}`}
-                    // 4. Force standard hex colors here to stop the PDF crash
+                      ${
+                        isFlipped
+                          ? "bg-orange-500 border-orange-500 text-white"
+                          : "bg-white border-orange-200 text-gray-800 hover:border-orange-500"
+                      }`}
                     style={{
-                      backgroundColor: isFlipped ? '#f97316' : '#ffffff',
-                      borderColor: isFlipped ? '#f97316' : '#fed7aa',
-                      color: isFlipped ? '#ffffff' : '#1f2937'
+                      backgroundColor: isFlipped ? "#f97316" : "#ffffff",
+                      borderColor: isFlipped ? "#f97316" : "#fed7aa",
+                      color: isFlipped ? "#ffffff" : "#1f2937",
                     }}
                   >
                     <span className="absolute top-3 left-4 text-xs font-bold opacity-50 uppercase tracking-wider">
-                      {isFlipped ? 'Answer' : 'Question'}
+                      {isFlipped ? "Answer" : "Question"}
                     </span>
 
                     <h3 className="text-lg font-medium mt-4">
                       {isFlipped ? card.answer : card.question}
                     </h3>
 
-                    {/* Hide the "Click to flip" text from the PDF since it's a printed document */}
-                    <span 
-                      className="absolute bottom-3 text-xs opacity-60"
-                      data-html2canvas-ignore="true" 
-                    >
+                    <span className="absolute bottom-3 text-xs opacity-60">
                       Click to flip
                     </span>
                   </div>
@@ -214,14 +245,17 @@ const FlashcardsPage = () => {
           </div>
 
           <div className="w-full flex justify-end gap-4 mt-10">
-            {/* 5. The Download Button */}
             <button
               onClick={handleDownloadPDF}
               disabled={isGeneratingPdf}
-              className={`flex items-center gap-2 px-6 py-2.5 text-white rounded-xl transition-all shadow-sm font-medium ${isGeneratingPdf ? 'bg-emerald-400 cursor-not-allowed' : 'bg-emerald-500 hover:bg-emerald-600 hover:shadow-md hover:-translate-y-0.5'}`}
+              className={`flex items-center gap-2 px-6 py-2.5 text-white rounded-xl transition-all shadow-sm font-medium ${
+                isGeneratingPdf
+                  ? "bg-emerald-400 cursor-not-allowed"
+                  : "bg-emerald-500 hover:bg-emerald-600 hover:shadow-md hover:-translate-y-0.5"
+              }`}
             >
               <Download size={18} />
-              {isGeneratingPdf ? 'Generating PDF...' : 'Download PDF'}
+              {isGeneratingPdf ? "Generating PDF..." : "Download PDF"}
             </button>
 
             <button
@@ -234,6 +268,9 @@ const FlashcardsPage = () => {
           </div>
         </div>
       )}
+      
+     
+      
     </div>
   );
 };

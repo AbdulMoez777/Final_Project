@@ -158,7 +158,7 @@ const Summary = () => {
             </span>
             <input
               type="file"
-              accept=".pdf,.pptx,.txt"
+              accept=".pdf,.docx, .doc,.pptx,.txt"
               onChange={handleFileUpload}
               disabled={loading}
               className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition cursor-pointer"

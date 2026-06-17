@@ -138,7 +138,7 @@ const Settings = () => {
 
         {/* Profile Card */}
         <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 mb-8">
-          {/* 👇 UPDATED: Avatar Uploader Section */}
+          {/* Avatar Uploader Section */}
           <div className="flex items-center gap-6 mb-8">
             <div className="relative group">
               {/* Show the uploaded image OR the default letter/icon */}
@@ -202,7 +202,7 @@ const Settings = () => {
               <p className="text-slate-500">Manage your personal information</p>
             </div>
           </div>
-          {/* 👆 END Avatar Uploader Section */}
+          {/* END Avatar Uploader Section */}
 
           <div className="space-y-4">
             {/* Display Name Row with Edit Feature */}

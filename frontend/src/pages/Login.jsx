@@ -9,7 +9,7 @@ const Login = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
 
-  // 👇 Added this state variable for the custom error message
+  //Added this state variable for the custom error message
   const [error, setError] = useState("");
 
   const handleLogin = async () => {
@@ -42,7 +42,7 @@ const Login = () => {
           navigate("/dashboard");
         }
       } else {
-        // 👇 Replaced the alert with the custom error state
+        
         setError(data.error || "Invalid email or password.");
       }
     } catch (error) {
@@ -96,7 +96,7 @@ const Login = () => {
         <p className="text-center text-slate-500 mb-6">Welcome back!</p>
 
         <div className="space-y-4">
-          {/* 👇 Added the custom red error box UI here 👇 */}
+          {/*Added the custom red error box UI here */}
           {error && (
             <div className="p-3 mb-4 bg-red-50 text-red-600 text-sm font-medium rounded-lg border border-red-200 flex items-center gap-2 shadow-sm animate-fade-in-down">
               <svg
@@ -115,7 +115,7 @@ const Login = () => {
               <span>{error}</span>
             </div>
           )}
-          {/* 👆 End error box 👆 */}
+          {/* End error box */}
 
           <div>
             <label className="block text-sm font-medium text-slate-600 mb-1">

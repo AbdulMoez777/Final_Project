@@ -229,7 +229,7 @@ const LandingPage = () => {
               title="Progress Tracking"
               desc="Visualize your learning journey with detailed analytics and charts."
             />
-            {/* 👇 NEW: YouTube Feature Card instead of Secure Storage */}
+            {/* YouTube Feature Card  */}
             <FeatureCard
               icon={<Youtube size={24} className="text-red-600" />}
               title="YouTube to Notes"

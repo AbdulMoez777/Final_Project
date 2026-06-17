@@ -95,7 +95,7 @@ const FlashcardsPage = () => {
     setFlippedCards([]);
   };
 
-  // 👇 THE ULTIMATE FIX: Generating the PDF completely in memory!
+  //  Generating the PDF completely in memory!
   const handleDownloadPDF = async () => {
     setIsGeneratingPdf(true);
 

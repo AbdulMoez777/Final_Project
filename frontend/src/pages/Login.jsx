@@ -150,11 +150,6 @@ const Login = () => {
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
-            <div className="text-right mt-1">
-              <a href="#" className="text-xs text-blue-500 hover:underline">
-                Forgot Password?
-              </a>
-            </div>
           </div>
 
           <button

@@ -361,7 +361,7 @@ const Dashboard = () => {
           <div className="max-w-6xl mx-auto">
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-slate-900 capitalize">
-                Welcome back, {userName.split("@")[0]}! 👋
+                Welcome back, {userName.split("@")[0]}! 
               </h1>
               <p className="text-slate-500 mt-1">
                 Ready to generate some new study materials today?
